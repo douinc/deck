@@ -1,0 +1,105 @@
+name: 'Wiki Auto-Sync'
+# Claude Code를 사용하여 PR 머지 시 Wiki를 자동으로 업데이트합니다
+
+on:
+  # Auto-sync wiki/ to GitHub Wiki on push to main
+  push:
+    branches: [main]
+    paths:
+      - 'wiki/**'
+  # Trigger on PR comments containing the trigger phrase
+  issue_comment:
+    types: [created]
+  # Trigger when wiki-sync label is added to a PR
+  pull_request:
+    types: [labeled, opened, synchronize]
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      language:
+        description: '문서 언어 (en, ko, both)'
+        required: false
+        default: 'both'
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+
+jobs:
+  sync-wiki:
+    runs-on: ubuntu-latest
+    # Only run on PR events with wiki-sync label, or issue_comment with trigger phrase
+    if: |
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'wiki-sync')) ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '/sync-wiki'))
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Run Claude Code Action
+      if: github.event_name != 'push'
+      uses: anthropics/claude-code-action@v1
+      with:
+        claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+        trigger_phrase: '/sync-wiki'
+        label_trigger: 'wiki-sync'
+        prompt: |
+          You are a documentation expert. Analyze the code changes and update the wiki accordingly.
+
+          Language: ${{ inputs.language || 'both' }}
+
+          Tasks:
+          0. Observe current wiki state
+          1. Analyze what changed in the codebase
+          2. Identify which wiki pages need updates
+          3. Update wiki/ directory with accurate documentation
+          4. Use [[Page-Name]] for internal wiki links
+          5. Include Mermaid diagrams where helpful. Don't use raw text diagrams in codeblocks.
+
+          Language instructions:
+          - en: English only
+          - ko: Korean only
+          - both: Create both (use -ko suffix for Korean, e.g., API.md and API-ko.md)
+
+          Output files to wiki/ directory.
+
+    - name: Sync to GitHub Wiki
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        if [ ! -d "wiki" ]; then
+          echo "⚠️ No wiki directory found, skipping sync"
+          exit 0
+        fi
+
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+        REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.wiki.git"
+
+        git clone "$REPO_URL" wiki-repo 2>/dev/null || {
+          echo "⚠️ Wiki not initialized. Please create a wiki page manually first."
+          echo "Go to: https://github.com/${{ github.repository }}/wiki"
+          exit 0
+        }
+
+        rm -rf wiki-repo/*
+        cp -r wiki/* wiki-repo/
+
+        cd wiki-repo
+        git add -A
+
+        if git diff --staged --quiet; then
+          echo "ℹ️ No changes to sync"
+        else
+          git commit -m "docs: auto-update wiki from ${{ github.sha }}"
+          git push
+          echo "✅ Wiki synced successfully"
+        fi

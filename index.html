@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Deck — Liquid Glass Presentation Remote</title>
+    <meta name="description" content="Deck turns your iPhone, Mac, and Apple Watch into a unified presentation remote with a liquid glass aesthetic and secure peer-to-peer control."/>
+    <meta property="og:title" content="Deck"/>
+    <meta property="og:description" content="SwiftUI-powered presentation remote for Mac, iPhone, and Apple Watch."/>
+    <meta property="og:image" content="public/logo/ios-logo.png"/>
+    <link rel="icon" type="image/png" href="public/logo/ios-logo.png"/>
+    <style>
+        :root {
+            --bg: #03060d;
+            --bg-alt: rgba(16, 21, 34, 0.6);
+            --card: rgba(12, 18, 32, 0.65);
+            --accent: #66f0ff;
+            --accent-strong: #3f8cff;
+            --text: #f6fbff;
+            --muted: rgba(246, 251, 255, 0.7);
+            --border: rgba(255, 255, 255, 0.08);
+        }
+        *, *::before, *::after { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: 'SF Pro Display', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.5;
+            position: relative;
+            overflow-x: hidden;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 10% 20%, rgba(102, 240, 255, 0.15), transparent 45%),
+                        radial-gradient(circle at 80% 0%, rgba(63, 140, 255, 0.3), transparent 50%),
+                        radial-gradient(circle at 50% 80%, rgba(147, 87, 255, 0.2), transparent 50%);
+            filter: blur(20px);
+            z-index: -2;
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: linear-gradient(120deg, rgba(255, 255, 255, 0.04) 0%, transparent 40%),
+                              linear-gradient(300deg, rgba(255, 255, 255, 0.02) 20%, transparent 70%);
+            mix-blend-mode: screen;
+            z-index: -1;
+        }
+        img { max-width: 100%; display: block; }
+        video { display: block; max-width: 100%; border-radius: 24px; }
+        main { width: min(1200px, 95vw); margin: 0 auto; padding: 32px 0 80px; }
+        nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 28px;
+            border-radius: 24px;
+            margin-top: 18px;
+            background: rgba(6, 12, 24, 0.65);
+            backdrop-filter: blur(22px);
+            border: 1px solid var(--border);
+        }
+        .brand { display: flex; align-items: center; gap: 14px; font-weight: 600; letter-spacing: 0.04em; }
+        .brand img { width: 42px; height: 42px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45); }
+        .nav-links { display: flex; gap: 22px; font-size: 0.95rem; color: var(--muted); }
+        .nav-links a { color: inherit; text-decoration: none; position: relative; padding-bottom: 4px; }
+        .nav-links a::after { content: ''; position: absolute; left: 0; bottom: 0; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, var(--accent), transparent); opacity: 0; transition: opacity 0.2s ease; }
+        .nav-links a:hover::after { opacity: 1; }
+        .pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.15); color: var(--muted); font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; }
+        .eyebrow { color: var(--accent); font-size: 0.88rem; letter-spacing: 0.3em; text-transform: uppercase; }
+        .hero { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 40px; align-items: center; margin: 70px 0; }
+        .hero h1 { font-size: clamp(2.5rem, 5vw, 3.5rem); margin: 18px 0; line-height: 1.1; }
+        .hero p { color: var(--muted); font-size: 1.1rem; margin-bottom: 28px; }
+        .cta-group { display: flex; flex-wrap: wrap; gap: 16px; }
+        .btn { padding: 16px 28px; border-radius: 16px; border: 1px solid transparent; font-weight: 600; font-size: 1rem; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; }
+        .btn.primary { background: linear-gradient(120deg, #4de3ff, #3f8cff); color: #03060d; box-shadow: 0 20px 45px rgba(63, 140, 255, 0.45); }
+        .btn.secondary { background: rgba(255, 255, 255, 0.05); color: var(--text); border-color: rgba(255, 255, 255, 0.2); }
+        .hero-media { background: rgba(8, 14, 26, 0.7); border-radius: 32px; padding: 24px; backdrop-filter: blur(26px); border: 1px solid var(--border); box-shadow: 0 25px 55px rgba(0, 0, 0, 0.45); position: relative; overflow: hidden; }
+        .hero-media::after { content: ''; position: absolute; inset: 12px; border-radius: 28px; border: 1px solid rgba(255, 255, 255, 0.08); pointer-events: none; }
+        .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; margin-top: 30px; }
+        .metric { background: rgba(255, 255, 255, 0.03); border-radius: 20px; padding: 18px 22px; border: 1px solid var(--border); }
+        .metric strong { font-size: 1.8rem; display: block; }
+        section { margin: 80px 0; }
+        .section-shell { background: var(--card); border-radius: 40px; padding: 48px; border: 1px solid var(--border); backdrop-filter: blur(25px); box-shadow: 0 25px 55px rgba(0, 0, 0, 0.4); }
+        .section-title { display: flex; justify-content: space-between; flex-wrap: wrap; align-items: baseline; gap: 12px; margin-bottom: 36px; }
+        .section-title h2 { font-size: 2rem; margin: 0; }
+        .section-title p { color: var(--muted); max-width: 520px; }
+        .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; }
+        .feature-card { padding: 28px; border-radius: 28px; background: rgba(9, 15, 28, 0.65); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; }
+        .feature-card h3 { margin: 0; font-size: 1.2rem; }
+        .feature-card span { color: var(--accent); letter-spacing: 0.3em; font-size: 0.7rem; }
+        .platforms { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 28px; }
+        .platform-card { padding: 32px; border-radius: 32px; border: 1px solid var(--border); background: rgba(5, 11, 22, 0.8); backdrop-filter: blur(20px); display: flex; flex-direction: column; gap: 16px; }
+        .platform-card img { width: 56px; height: 56px; border-radius: 16px; }
+        .platform-card ul { list-style: none; padding: 0; margin: 0; color: var(--muted); }
+        .platform-card ul li { margin-bottom: 6px; }
+        .workflow { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 28px; counter-reset: steps; }
+        .workflow-card { position: relative; padding: 28px; border-radius: 28px; border: 1px solid var(--border); background: rgba(7, 12, 24, 0.85); }
+        .workflow-card::before { counter-increment: steps; content: counter(steps, decimal-leading-zero); position: absolute; top: -20px; right: 28px; font-size: 4rem; color: rgba(255, 255, 255, 0.03); font-weight: 700; }
+        .workflow-card h3 { margin-top: 0; }
+        .architecture { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 28px; }
+        .list { list-style: none; padding: 0; margin: 0; color: var(--muted); }
+        .list li { margin-bottom: 12px; display: flex; gap: 12px; }
+        .list strong { color: var(--text); }
+        .video-frame { position: relative; overflow: hidden; border-radius: 32px; border: 1px solid var(--border); background: rgba(255, 255, 255, 0.02); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5); }
+        footer { margin: 90px 0 40px; text-align: center; color: var(--muted); }
+        footer a { color: var(--accent); text-decoration: none; margin: 0 12px; }
+        @media (max-width: 720px) {
+            nav { flex-direction: column; gap: 16px; }
+            .nav-links { flex-wrap: wrap; justify-content: center; }
+            .section-shell { padding: 32px 24px; }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <nav>
+            <div class="brand">
+                <img src="public/logo/ios-logo.png" alt="Deck logo">
+                <div>
+                    <div>Deck</div>
+                    <small>By DOU Inc.</small>
+                </div>
+            </div>
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#platforms">Platforms</a>
+                <a href="#workflow">Workflow</a>
+                <a href="#support">Support</a>
+            </div>
+        </nav>
+
+        <section class="hero">
+            <div>
+                <div class="pill">SwiftUI • MultipeerConnectivity • WatchConnectivity</div>
+                <h1>Presentation Remote for Apple Fans</h1>
+                <p>
+                    Control Keynote, PowerPoint, or Google Slides without dongles or cloud accounts. Deck pairs your Mac,
+                    iPhone, and Apple Watch using encrypted local networking so every tap lands exactly when you need it.
+                </p>
+                <div class="cta-group">
+                    <a class="btn primary" href="https://apps.apple.com/us/app/deck/id6758130180" target="_blank" rel="noopener">Install for iOS and Watch</a>
+                    <a class="btn secondary" href="https://github.com/douinc/deck/releases" target="_blank" rel="noopener">Install for Mac</a>
+                </div>
+                <div class="metrics">
+                    <div class="metric"><strong>Mac 1.11</strong><span>Deck</span></div>
+                    <div class="metric"><strong>iOS 1.11</strong><span>Deck</span></div>
+                    <div class="metric"><strong>watchOS 1.11</strong><span>Deck</span></div>
+                </div>
+            </div>
+            <div class="hero-media">
+                <div class="video-frame">
+                    <video autoplay muted loop playsinline poster="public/screenshot/ios/3-connect.png">
+                        <source src="public/demo.MP4" type="video/mp4">
+                        Your browser does not support the Deck demo video.
+                    </video>
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="section-shell">
+            <div class="section-title">
+                <h2>Designed for stage control, not slide anxiety</h2>
+                <p>Swift 5.9, SwiftUI, and Apple’s haptics toolkit combine for a tactile experience that mirrors the decks pros carry on stage. Every surface follows the liquid glass aesthetic outlined in our product design language.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <span>01</span>
+                    <h3>Peer-to-peer reliability</h3>
+                    <p>No external servers, accounts, or analytics. The Mac advertises Bonjour services and the iPhone joins instantly on the same network.</p>
+                </div>
+                <div class="feature-card">
+                    <span>02</span>
+                    <h3>Cross-device control</h3>
+                    <p>Apple Watch double-tap gestures and Digital Crown rotation trigger the same RemoteCommand used by the iPhone UI, routed through WatchConnectivity.</p>
+                </div>
+                <div class="feature-card">
+                    <span>03</span>
+                    <h3>Timer with haptic cues</h3>
+                    <p>Set presentation timers and feel pulses as milestones approach—ideal for keynotes with tight run-of-show schedules.</p>
+                </div>
+                <div class="feature-card">
+                    <span>04</span>
+                    <h3>Menu bar minimalism</h3>
+                    <p>The macOS receiver lives in the menu bar, requests accessibility permissions once, and injects previous and next keystrokes for any frontmost app.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="platforms" class="section-shell">
+            <div class="section-title">
+                <h2>One system, three tailored experiences</h2>
+                <p>Each binary ships with the right distribution channel: App Store for iPhone + Watch, notarized DMG for Mac. Shared Swift packages keep RemoteCommand and networking logic aligned.</p>
+            </div>
+            <div class="platforms">
+                <div class="platform-card">
+                    <img src="public/logo/ios-logo.png" alt="iOS logo">
+                    <h3>Deck (iPhone)</h3>
+                    <ul>
+                        <li>Liquid glass vertical remote layout</li>
+                        <li>Dark-only UI for backstage visibility</li>
+                        <li>Subscription-ready with trials</li>
+                        <li>Automatic Mac discovery via MultipeerConnectivity</li>
+                        <li>Live Activities on Lock Screen &amp; Dynamic Island</li>
+                    </ul>
+                </div>
+                <div class="platform-card">
+                    <img src="public/logo/mac-logo.png" alt="macOS logo">
+                    <h3>Deck (Mac)</h3>
+                    <ul>
+                        <li>Signed + notarized DMG workflow</li>
+                        <li>Menu bar controller and keystroke bridge</li>
+                        <li>Hardened Runtime, accessibility permissions</li>
+                        <li>DMG distributed on GitHub with Homebrew tap</li>
+                    </ul>
+                </div>
+                <div class="platform-card">
+                    <img src="public/logo/ios-logo.png" alt="Apple Watch screenshot" style="object-fit: cover;">
+                    <h3>Deck (Apple Watch)</h3>
+                    <ul>
+                        <li>Installed automatically with iOS app</li>
+                        <li>Digital Crown rotation for slide navigation</li>
+                        <li>Double-tap gesture for hands-free next slide</li>
+                        <li>Extended runtime session keeps app alive</li>
+                        <li>Relays commands through iPhone instantly</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="section-shell" id="workflow">
+            <div class="section-title">
+                <h2>Simple onboarding before showtime</h2>
+                <p>Install the Mac App and iOS app. Test the iOS or Watch app. Connect your Mac to the screen.</p>
+            </div>
+            <div class="workflow">
+                <div class="workflow-card">
+                    <h3>Install the Mac receiver</h3>
+                    <p>Download the notarized DMG, drag `Deck` to Applications, and grant accessibility control when prompted.</p>
+                </div>
+                <div class="workflow-card">
+                    <h3>Pair the iPhone remote</h3>
+                    <p>Install from the App Store, open Deck, and select your Mac from the Bonjour list. No manual IP addresses required.</p>
+                </div>
+                <div class="workflow-card">
+                    <h3>Activate the Watch</h3>
+                    <p>The Watch companion installs automatically. Use the Digital Crown, double-tap gesture, or on-screen buttons to control slides from your wrist.</p>
+                </div>
+                <div class="workflow-card">
+                    <h3>Present with confidence</h3>
+                    <p>Swipe or tap to advance slides while the timer, haptics, and liquid glass UI keep you focused on your story.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section-shell">
+            <div class="section-title">
+                <h2>Install via Homebrew</h2>
+                <p>Get the Mac receiver up and running in seconds with Homebrew. No manual downloads or drag-and-drop required.</p>
+            </div>
+            <div style="background: rgba(9, 15, 28, 0.65); border-radius: 20px; border: 1px solid var(--border); padding: 28px; font-family: 'SF Mono', SFMono-Regular, Menlo, monospace; font-size: 0.95rem; line-height: 2; color: var(--muted); overflow-x: auto;">
+                <div><span style="color: rgba(255,255,255,0.35);">$</span> <span style="color: var(--text);">brew tap douinc/deck https://github.com/douinc/deck</span></div>
+                <div><span style="color: rgba(255,255,255,0.35);">$</span> <span style="color: var(--text);">brew install --cask deck</span></div>
+            </div>
+        </section>
+
+        <section class="section-shell">
+            <div class="section-title">
+                <h2>Architecture snapshot</h2>
+                <p>Every layer is documented in the GitHub wiki and compiled via XcodeGen for reproducible builds.</p>
+            </div>
+            <div class="architecture">
+                <div>
+                    <h3>Stack</h3>
+                    <ul class="list">
+                        <li><strong>Language:</strong> Swift 5.9 with shared RemoteCommand models</li>
+                        <li><strong>UI:</strong> SwiftUI</li>
+                        <li><strong>Networking:</strong> MultipeerConnectivity + WatchConnectivity</li>
+                        <li><strong>Build:</strong> XcodeGen + `just` automation</li>
+                        <li><strong>Platforms:</strong> macOS 14+, iOS 18+, watchOS 10+</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>Distribution</h3>
+                    <ul class="list">
+                        <li><strong>iOS &amp; Watch:</strong> App Store via TestFlight pipeline</li>
+                        <li><strong>Mac:</strong> Signed + notarized DMG</li>
+                        <li><strong>Homebrew tap:</strong> Easily download and update Deck Mac app using homebrew</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>Security posture</h3>
+                    <ul class="list">
+                        <li><strong>Local only:</strong> Commands stay on your network</li>
+                        <li><strong>Accessibility:</strong> Minimal permissions, once per Mac</li>
+                        <li><strong>Hardened Runtime:</strong> Required for notarization</li>
+                        <li><strong>Crown threshold:</strong> 3-detent threshold prevents accidental slide jumps</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="section-shell" id="support">
+            <div class="section-title">
+                <h2>Need help or ready to contribute?</h2>
+                <p>Everything—Swift code, wiki docs, and distribution scripts—lives on GitHub. File issues, follow TestFlight betas, or dive into the wiki if you want to extend Deck to your stage setup.</p>
+            </div>
+            <div class="cta-group">
+                <a class="btn primary" href="https://github.com/douinc/deck" target="_blank" rel="noopener">Explore the repository</a>
+                <a class="btn secondary" href="https://github.com/douinc/deck/wiki" target="_blank" rel="noopener">Read the wiki</a>
+            </div>
+        </section>
+
+        <footer>
+            <p>
+                <a href="PRIVACY_POLICY.html">Privacy Policy</a>
+                <a href="TERMS_OF_SERVICE.html">Terms of Service</a>
+                <a href="https://github.com/douinc/deck/issues" target="_blank" rel="noopener">Support</a>
+            </p>
+            <p>© 2026 DOU Inc. Distributed under the MIT License.</p>
+        </footer>
+    </main>
+</body>
+</html>

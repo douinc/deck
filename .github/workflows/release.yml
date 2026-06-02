@@ -1,0 +1,142 @@
+name: Release Mac App
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  SCHEME: DeckMac
+  PRODUCT_NAME: Deck
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode Project
+        run: xcodegen generate
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.0.app
+
+      - name: Install Apple Certificate
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          # Create temporary keychain
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # Import certificate
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+          security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+      - name: Build Mac App
+        run: |
+          xcodebuild -scheme $SCHEME \
+            -configuration Release \
+            -derivedDataPath build \
+            -archivePath build/Deck.xcarchive \
+            archive \
+            CODE_SIGN_IDENTITY="Developer ID Application" \
+            DEVELOPMENT_TEAM=HD35YQ72U4
+
+      - name: Export App
+        run: |
+          # Create export options plist
+          cat > ExportOptions.plist << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>developer-id</string>
+            <key>teamID</key>
+            <string>HD35YQ72U4</string>
+          </dict>
+          </plist>
+          EOF
+
+          xcodebuild -exportArchive \
+            -archivePath build/Deck.xcarchive \
+            -exportPath build/export \
+            -exportOptionsPlist ExportOptions.plist
+
+      - name: Notarize App
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          TEAM_ID: HD35YQ72U4
+        run: |
+          # Create zip for notarization
+          cd build/export
+          ditto -c -k --keepParent "$PRODUCT_NAME.app" "$PRODUCT_NAME.zip"
+
+          # Submit for notarization
+          xcrun notarytool submit "$PRODUCT_NAME.zip" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_PASSWORD" \
+            --team-id "$TEAM_ID" \
+            --wait
+
+          # Staple the notarization ticket
+          xcrun stapler staple "$PRODUCT_NAME.app"
+
+      - name: Create DMG
+        run: |
+          # Create DMG
+          hdiutil create -volname "$PRODUCT_NAME" \
+            -srcfolder "build/export/$PRODUCT_NAME.app" \
+            -ov -format UDZO \
+            "build/$PRODUCT_NAME.dmg"
+
+      - name: Get Version
+        id: version
+        env:
+          GIT_REF: ${{ github.ref }}
+        run: echo "version=${GIT_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: build/${{ env.PRODUCT_NAME }}.dmg
+          name: Deck ${{ steps.version.outputs.version }}
+          body: |
+            ## Installation
+
+            ### Option 1: Homebrew (Recommended)
+            ```bash
+            brew tap douinc/deck https://github.com/douinc/deck
+            brew install --cask deck
+            ```
+
+            ### Option 2: Direct Download
+            1. Download `Deck.dmg`
+            2. Open the DMG and drag Deck to Applications
+            3. Open Deck from Applications
+
+            **Note**: The Mac app is the free companion receiver for the iOS Deck remote.
+
+            ## What's New
+            See [CHANGELOG.md](https://github.com/douinc/presentation-remote/blob/main/CHANGELOG.md) for details.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cleanup Keychain
+        if: always()
+        run: security delete-keychain $RUNNER_TEMP/app-signing.keychain-db || true
