@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Support — Deck</title>
+    <meta name="description" content="Get help with Deck, the liquid glass presentation remote for Mac, iPhone, and Apple Watch."/>
+    <meta property="og:title" content="Deck Support"/>
+    <meta property="og:description" content="Contact the Deck team or browse common questions."/>
+    <meta property="og:image" content="../public/logo/ios-logo.png"/>
+    <link rel="icon" type="image/png" href="../public/logo/ios-logo.png"/>
+    <style>
+        :root {
+            --bg: #03060d;
+            --bg-alt: rgba(16, 21, 34, 0.6);
+            --card: rgba(12, 18, 32, 0.65);
+            --accent: #66f0ff;
+            --accent-strong: #3f8cff;
+            --text: #f6fbff;
+            --muted: rgba(246, 251, 255, 0.7);
+            --border: rgba(255, 255, 255, 0.08);
+            --error: #ff6b6b;
+            --success: #4de3a8;
+        }
+        *, *::before, *::after { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: 'SF Pro Display', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.5;
+            position: relative;
+            overflow-x: hidden;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 10% 20%, rgba(102, 240, 255, 0.15), transparent 45%),
+                        radial-gradient(circle at 80% 0%, rgba(63, 140, 255, 0.3), transparent 50%),
+                        radial-gradient(circle at 50% 80%, rgba(147, 87, 255, 0.2), transparent 50%);
+            filter: blur(20px);
+            z-index: -2;
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: linear-gradient(120deg, rgba(255, 255, 255, 0.04) 0%, transparent 40%),
+                              linear-gradient(300deg, rgba(255, 255, 255, 0.02) 20%, transparent 70%);
+            mix-blend-mode: screen;
+            z-index: -1;
+        }
+        img { max-width: 100%; display: block; }
+        main { width: min(1200px, 95vw); margin: 0 auto; padding: 32px 0 80px; }
+        nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 28px;
+            border-radius: 24px;
+            margin-top: 18px;
+            background: rgba(6, 12, 24, 0.65);
+            backdrop-filter: blur(22px);
+            border: 1px solid var(--border);
+        }
+        .brand { display: flex; align-items: center; gap: 14px; font-weight: 600; letter-spacing: 0.04em; text-decoration: none; color: var(--text); }
+        .brand img { width: 42px; height: 42px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45); }
+        .nav-links { display: flex; gap: 22px; font-size: 0.95rem; color: var(--muted); }
+        .nav-links a { color: inherit; text-decoration: none; position: relative; padding-bottom: 4px; }
+        .nav-links a::after { content: ''; position: absolute; left: 0; bottom: 0; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, var(--accent), transparent); opacity: 0; transition: opacity 0.2s ease; }
+        .nav-links a:hover::after, .nav-links a.active::after { opacity: 1; }
+        .nav-links a.active { color: var(--text); }
+        section { margin: 48px 0; }
+        .section-shell {
+            background: var(--card);
+            border-radius: 40px;
+            padding: 48px;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(25px);
+            box-shadow: 0 25px 55px rgba(0, 0, 0, 0.4);
+        }
+        .eyebrow { color: var(--accent); font-size: 0.88rem; letter-spacing: 0.3em; text-transform: uppercase; margin-bottom: 12px; }
+        .page-hero { margin: 60px 0 48px; }
+        .page-hero h1 { font-size: clamp(2rem, 4.5vw, 3rem); margin: 12px 0 16px; line-height: 1.1; }
+        .page-hero p { color: var(--muted); font-size: 1.1rem; max-width: 560px; margin: 0; }
+
+        /* Form */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .form-group { display: flex; flex-direction: column; gap: 8px; }
+        .form-group.full { grid-column: 1 / -1; }
+        label { font-size: 0.88rem; font-weight: 500; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; }
+        input, select, textarea {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px 18px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            width: 100%;
+            -webkit-appearance: none;
+        }
+        input::placeholder, textarea::placeholder { color: rgba(246, 251, 255, 0.3); }
+        input:focus, select:focus, textarea:focus {
+            border-color: rgba(102, 240, 255, 0.4);
+            box-shadow: 0 0 0 3px rgba(102, 240, 255, 0.08);
+        }
+        textarea { resize: vertical; min-height: 140px; line-height: 1.6; }
+        select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='rgba(246,251,255,0.4)' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            padding-right: 44px;
+            cursor: pointer;
+        }
+        select option { background: #0c1220; color: var(--text); }
+        .btn-submit {
+            padding: 16px 32px;
+            border-radius: 16px;
+            border: none;
+            font-weight: 600;
+            font-size: 1rem;
+            background: linear-gradient(120deg, #4de3ff, #3f8cff);
+            color: #03060d;
+            box-shadow: 0 20px 45px rgba(63, 140, 255, 0.45);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: opacity 0.2s, transform 0.1s;
+            font-family: inherit;
+        }
+        .btn-submit:hover { opacity: 0.9; }
+        .btn-submit:active { transform: scale(0.98); }
+        .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .form-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-top: 8px; }
+        .form-note { color: var(--muted); font-size: 0.88rem; }
+        .form-note a { color: var(--accent); text-decoration: none; }
+
+        /* Confirmation state */
+        .confirmation {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 48px 24px;
+            text-align: center;
+            gap: 16px;
+        }
+        .confirmation.visible { display: flex; }
+        .confirmation-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(77, 227, 168, 0.2), rgba(77, 227, 168, 0.05));
+            border: 1px solid rgba(77, 227, 168, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+        }
+        .confirmation h3 { margin: 0; font-size: 1.4rem; }
+        .confirmation p { color: var(--muted); margin: 0; max-width: 400px; }
+        .btn-secondary {
+            padding: 12px 24px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+            margin-top: 8px;
+        }
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.08); }
+
+        /* FAQ */
+        .faq-list { display: flex; flex-direction: column; gap: 2px; }
+        .faq-item {
+            border-radius: 16px;
+            border: 1px solid transparent;
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+        .faq-item:hover { border-color: var(--border); }
+        .faq-item.open { border-color: rgba(102, 240, 255, 0.15); background: rgba(102, 240, 255, 0.03); }
+        .faq-trigger {
+            width: 100%;
+            background: none;
+            border: none;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 500;
+            text-align: left;
+            padding: 18px 22px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+        .faq-trigger:hover { color: var(--accent); }
+        .faq-chevron {
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            color: var(--muted);
+            transition: transform 0.25s ease, color 0.2s;
+        }
+        .faq-item.open .faq-chevron { transform: rotate(180deg); color: var(--accent); }
+        .faq-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .faq-body-inner { padding: 0 22px 18px; color: var(--muted); line-height: 1.7; }
+        .faq-body-inner a { color: var(--accent); text-decoration: none; }
+        .faq-body-inner code {
+            background: rgba(255, 255, 255, 0.07);
+            border-radius: 6px;
+            padding: 2px 7px;
+            font-size: 0.88em;
+            font-family: 'SF Mono', SFMono-Regular, Menlo, monospace;
+        }
+
+        /* Section title */
+        .section-title { margin-bottom: 32px; }
+        .section-title h2 { font-size: 1.8rem; margin: 0 0 10px; }
+        .section-title p { color: var(--muted); margin: 0; }
+
+        /* Contact card row */
+        .contact-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin-bottom: 40px; }
+        .contact-option {
+            padding: 24px;
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            background: rgba(9, 15, 28, 0.65);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .contact-option-icon { font-size: 1.5rem; }
+        .contact-option h4 { margin: 0; font-size: 1rem; }
+        .contact-option p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+        .contact-option a { color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+
+        footer { margin: 90px 0 40px; text-align: center; color: var(--muted); }
+        footer a { color: var(--accent); text-decoration: none; margin: 0 12px; }
+
+        @media (max-width: 720px) {
+            nav { flex-direction: column; gap: 16px; }
+            .nav-links { flex-wrap: wrap; justify-content: center; }
+            .section-shell { padding: 32px 24px; }
+            .form-grid { grid-template-columns: 1fr; }
+            .form-group.full { grid-column: 1; }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <nav>
+            <a class="brand" href="/">
+                <img src="../public/logo/ios-logo.png" alt="Deck logo">
+                <div>
+                    <div>Deck</div>
+                    <small>By DOU Inc.</small>
+                </div>
+            </a>
+            <div class="nav-links">
+                <a href="/#features">Features</a>
+                <a href="/#platforms">Platforms</a>
+                <a href="/#workflow">Workflow</a>
+                <a href="/support" class="active">Support</a>
+            </div>
+        </nav>
+
+        <div class="page-hero">
+            <div class="eyebrow">Support</div>
+            <h1>How can we help?</h1>
+            <p>Get in touch with the Deck team or find answers to common questions below.</p>
+        </div>
+
+        <div class="contact-options">
+            <div class="contact-option">
+                <div class="contact-option-icon">✉️</div>
+                <h4>Email</h4>
+                <p>Direct line to the team</p>
+                <a href="mailto:team@dou.so">team@dou.so</a>
+            </div>
+            <div class="contact-option">
+                <div class="contact-option-icon">🐛</div>
+                <h4>Bug Reports</h4>
+                <p>File an issue on GitHub</p>
+                <a href="https://github.com/douinc/deck/issues" target="_blank" rel="noopener">Open an issue</a>
+            </div>
+            <div class="contact-option">
+                <div class="contact-option-icon">📖</div>
+                <h4>Documentation</h4>
+                <p>Developer wiki and guides</p>
+                <a href="https://github.com/douinc/deck/wiki" target="_blank" rel="noopener">Read the wiki</a>
+            </div>
+        </div>
+
+        <section class="section-shell">
+            <div class="section-title">
+                <h2>Send us a message</h2>
+                <p>We'll respond to team@dou.so. Fill in the form and your mail client will open with everything ready to send.</p>
+            </div>
+
+            <form id="inquiry-form">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="name">Your name</label>
+                        <input type="text" id="name" name="name" placeholder="Jane Smith" required autocomplete="name">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Your email</label>
+                        <input type="email" id="email" name="email" placeholder="jane@example.com" required autocomplete="email">
+                    </div>
+                    <div class="form-group full">
+                        <label for="topic">Topic</label>
+                        <select id="topic" name="topic" required>
+                            <option value="" disabled selected>Select a topic…</option>
+                            <option value="Connection issue">Connection issue (Mac ↔ iPhone)</option>
+                            <option value="Apple Watch not responding">Apple Watch not responding</option>
+                            <option value="Accessibility permission">Accessibility permission (Mac)</option>
+                            <option value="App Store / billing">App Store / billing</option>
+                            <option value="Feature request">Feature request</option>
+                            <option value="Bug report">Bug report</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group full">
+                        <label for="message">Message</label>
+                        <textarea id="message" name="message" placeholder="Describe your question or issue in as much detail as you can…" required></textarea>
+                    </div>
+                </div>
+                <div class="form-footer">
+                    <span class="form-note">Submitting opens your default mail app with this message addressed to <a href="mailto:team@dou.so">team@dou.so</a>.</span>
+                    <button type="submit" class="btn-submit" id="submit-btn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        Open mail client
+                    </button>
+                </div>
+            </form>
+
+            <div class="confirmation" id="confirmation">
+                <div class="confirmation-icon">✓</div>
+                <h3>Mail client opened</h3>
+                <p>Your message is ready to send in your mail app. We aim to reply within one business day.</p>
+                <button class="btn-secondary" id="reset-btn">Send another message</button>
+            </div>
+        </section>
+
+        <section class="section-shell">
+            <div class="section-title">
+                <h2>Common questions</h2>
+                <p>Quick answers to the most frequent issues.</p>
+            </div>
+            <div class="faq-list" id="faq-list">
+                <div class="faq-item">
+                    <button class="faq-trigger">
+                        Mac doesn't appear in the iPhone app's device list
+                        <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="faq-body">
+                        <div class="faq-body-inner">
+                            Both devices must be on the <strong>same Wi-Fi network</strong>. Deck uses MultipeerConnectivity's Bonjour service discovery — it won't work across different networks or when Wi-Fi is off.<br><br>
+                            Also check: the Mac app is running (look for the menu bar icon), and Local Network access is granted for Deck on your iPhone under <strong>Settings → Privacy & Security → Local Network</strong>.
+                        </div>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-trigger">
+                        The Mac app asks for Accessibility permission — is that safe?
+                        <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="faq-body">
+                        <div class="faq-body-inner">
+                            Yes. Deck uses macOS's <code>CGEvent</code> API to inject <strong>only two keystrokes</strong>: the left arrow (previous slide) and right arrow (next slide). It does not log keystrokes, read screen content, or send any data outside your local network. The full source code is <a href="https://github.com/douinc/deck" target="_blank" rel="noopener">available on GitHub</a>.
+                        </div>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-trigger">
+                        Apple Watch double-tap doesn't advance slides
+                        <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="faq-body">
+                        <div class="faq-body-inner">
+                            Double-tap requires <strong>Apple Watch Series 9, Ultra 2, or newer</strong> running watchOS 10+. The display must be active (wrist raised) — it does not fire in always-on / low-luminance state.<br><br>
+                            Make sure the DeckWatch app is open and in the foreground on your Watch. The app also supports wrist-flick gestures via the gyroscope if double-tap isn't available on your model.
+                        </div>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-trigger">
+                        Deck slides advance by two instead of one
+                        <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="faq-body">
+                        <div class="faq-body-inner">
+                            This usually means both the iPhone remote and another input device (keyboard, clicker) are advancing slides simultaneously. Make sure no other remote app is active, and that your presentation software's keyboard shortcut settings match what Deck sends (arrow keys by default).
+                        </div>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-trigger">
+                        How do I uninstall Deck from my Mac?
+                        <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="faq-body">
+                        <div class="faq-body-inner">
+                            Quit Deck from the menu bar icon, then drag <code>Deck.app</code> from your <strong>Applications</strong> folder to the Trash. To revoke Accessibility permission, go to <strong>System Settings → Privacy & Security → Accessibility</strong> and remove Deck.<br><br>
+                            If you installed via Homebrew: <code>brew uninstall --cask deck</code>.
+                        </div>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-trigger">
+                        Can Deck control Google Slides or other web-based presentations?
+                        <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="faq-body">
+                        <div class="faq-body-inner">
+                            Yes. Deck sends standard arrow key events to whatever app is in the foreground on your Mac. Google Slides (in Chrome or Safari), Keynote, PowerPoint, LibreOffice Impress, and any app that responds to left/right arrow keys for navigation will work. Just make sure the browser window is focused before your presentation starts.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <p>
+                <a href="../PRIVACY_POLICY.html">Privacy Policy</a>
+                <a href="../TERMS_OF_SERVICE.html">Terms of Service</a>
+                <a href="https://github.com/douinc/deck/issues" target="_blank" rel="noopener">GitHub Issues</a>
+            </p>
+            <p>© 2026 DOU Inc. Distributed under the MIT License.</p>
+        </footer>
+    </main>
+
+    <script>
+        // FAQ accordion
+        document.getElementById('faq-list').addEventListener('click', function(e) {
+            const trigger = e.target.closest('.faq-trigger');
+            if (!trigger) return;
+            const item = trigger.closest('.faq-item');
+            const body = item.querySelector('.faq-body');
+            const isOpen = item.classList.contains('open');
+
+            // Close all
+            document.querySelectorAll('.faq-item.open').forEach(function(openItem) {
+                openItem.classList.remove('open');
+                openItem.querySelector('.faq-body').style.maxHeight = null;
+            });
+
+            // Toggle clicked
+            if (!isOpen) {
+                item.classList.add('open');
+                body.style.maxHeight = body.scrollHeight + 'px';
+            }
+        });
+
+        // Inquiry form → mailto
+        document.getElementById('inquiry-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const topic = document.getElementById('topic').value;
+            const message = document.getElementById('message').value.trim();
+
+            const subject = '[Deck Support] ' + topic;
+            const body = [
+                'Name: ' + name,
+                'Email: ' + email,
+                '',
+                message
+            ].join('\n');
+
+            window.location.href = 'mailto:team@dou.so'
+                + '?subject=' + encodeURIComponent(subject)
+                + '&body=' + encodeURIComponent(body);
+
+            document.getElementById('inquiry-form').style.display = 'none';
+            const conf = document.getElementById('confirmation');
+            conf.classList.add('visible');
+        });
+
+        document.getElementById('reset-btn').addEventListener('click', function() {
+            document.getElementById('inquiry-form').reset();
+            document.getElementById('inquiry-form').style.display = '';
+            const conf = document.getElementById('confirmation');
+            conf.classList.remove('visible');
+        });
+    </script>
+</body>
+</html>
