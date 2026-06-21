@@ -36,7 +36,16 @@ class MacConnectionManager: NSObject, ObservableObject {
     private let myPeerID: MCPeerID
     private var session: MCSession?
     private var advertiser: MCNearbyServiceAdvertiser?
-    
+
+    // MARK: - Connection Health Watchdog
+    // MultipeerConnectivity can keep reporting `.connected` long after the
+    // underlying path is dead ("half-open"). We track the time of the last
+    // inbound packet (any command, including keepalives) and tear the session
+    // down if it goes stale, forcing a clean reconnect.
+    private var watchdogTimer: Timer?
+    private var lastReceivedTime = Date()
+    private let staleTimeout: TimeInterval = 9.0   // ~3 missed 3s keepalives
+
     // MARK: - Callback for keystroke
     var onCommandReceived: ((RemoteCommand) -> Void)?
     
@@ -75,7 +84,7 @@ class MacConnectionManager: NSObject, ObservableObject {
 
     // MARK: - Initialization
     override init() {
-        self.myPeerID = MCPeerID(displayName: Host.current().localizedName ?? "Mac")
+        self.myPeerID = RemoteServiceConfig.persistentPeerID(displayName: Host.current().localizedName ?? "Mac")
         super.init()
         debugLog("Initializing with peer ID: \(myPeerID.displayName)", level: .info)
         setupSession()
@@ -120,9 +129,48 @@ class MacConnectionManager: NSObject, ObservableObject {
     }
     
     func disconnect() {
+        stopWatchdog()
         session?.disconnect()
         connectedDevices.removeAll()
         statusMessage = "Disconnected"
+    }
+
+    // MARK: - Connection Health Watchdog
+    private func startWatchdog() {
+        stopWatchdog()
+        lastReceivedTime = Date()
+        watchdogTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
+            self?.checkConnectionHealth()
+        }
+    }
+
+    private func stopWatchdog() {
+        watchdogTimer?.invalidate()
+        watchdogTimer = nil
+    }
+
+    private func checkConnectionHealth() {
+        guard !connectedDevices.isEmpty else { return }
+        let elapsed = Date().timeIntervalSince(lastReceivedTime)
+        if elapsed > staleTimeout {
+            debugLog("Watchdog: no data for \(Int(elapsed))s, tearing down stale session", level: .warning)
+            // Disconnecting fires `.notConnected`, which recreates the session
+            // and restarts advertising for a clean reconnect.
+            session?.disconnect()
+        }
+    }
+
+    /// Recreates the session so the next invitation lands on a fresh, clean
+    /// session rather than one left in a half-dead state by a previous drop.
+    private func recreateSession() {
+        session?.delegate = nil
+        setupSession()
+    }
+
+    private func sendKeepaliveAck() {
+        guard let session = session, !session.connectedPeers.isEmpty else { return }
+        guard let data = RemoteCommand.keepaliveAck.rawValue.data(using: .utf8) else { return }
+        try? session.send(data, toPeers: session.connectedPeers, with: .reliable)
     }
 }
 
@@ -140,6 +188,7 @@ extension MacConnectionManager: MCSessionDelegate {
                 }
                 self.statusMessage = "Connected to \(peerID.displayName)"
                 self.lastError = nil
+                self.startWatchdog()
 
             case .connecting:
                 self.debugLog("SESSION STATE: Connecting to \(peerID.displayName)", level: .network)
@@ -151,6 +200,10 @@ extension MacConnectionManager: MCSessionDelegate {
                 self.sessionState = "Not connected"
                 self.connectedDevices.removeAll { $0 == peerID }
                 if self.connectedDevices.isEmpty {
+                    self.stopWatchdog()
+                    // Recreate the session so the next invitation lands on a
+                    // clean session instead of this half-dead one.
+                    self.recreateSession()
                     self.statusMessage = "Waiting for iPhone to reconnect..."
                     if self.advertiser == nil {
                         self.debugLog("Re-starting advertiser for reconnection", level: .network)
@@ -173,9 +226,21 @@ extension MacConnectionManager: MCSessionDelegate {
             print("⚠️ Failed to decode command")
             return
         }
-        
+
+        // Any inbound packet proves the link is alive — feed the watchdog.
+        DispatchQueue.main.async {
+            self.lastReceivedTime = Date()
+        }
+
+        // Keepalives are link-health probes, not user actions: reply and stop.
+        if command == .keepalive {
+            sendKeepaliveAck()
+            return
+        }
+        if command == .keepaliveAck { return }
+
         print("📥 Received command: \(command.rawValue) from \(peerID.displayName)")
-        
+
         DispatchQueue.main.async {
             self.lastCommand = command
             self.onCommandReceived?(command)
