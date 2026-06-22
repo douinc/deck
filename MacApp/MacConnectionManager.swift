@@ -44,7 +44,7 @@ class MacConnectionManager: NSObject, ObservableObject {
     // down if it goes stale, forcing a clean reconnect.
     private var watchdogTimer: Timer?
     private var lastReceivedTime = Date()
-    private let staleTimeout: TimeInterval = 9.0   // ~3 missed 3s keepalives
+    private let staleTimeout: TimeInterval = 15.0  // ~5 missed 3s keepalives
 
     // MARK: - Callback for keystroke
     var onCommandReceived: ((RemoteCommand) -> Void)?

@@ -62,7 +62,7 @@ class iPhoneConnectionManager: NSObject, ObservableObject {
     // Mac's keepalive ACKs have stopped arriving, and forces a clean reconnect.
     private var watchdogTimer: Timer?
     private var lastReceivedTime = Date()
-    private let staleTimeout: TimeInterval = 9.0   // ~3 missed 3s keepalive ACKs
+    private let staleTimeout: TimeInterval = 15.0  // ~5 missed 3s keepalives
 
     // MARK: - Haptic Feedback
     private let feedbackGenerator = UIImpactFeedbackGenerator(style: .medium)
@@ -225,6 +225,13 @@ class iPhoneConnectionManager: NSObject, ObservableObject {
 
         do {
             try session.send(data, toPeers: session.connectedPeers, with: .reliable)
+            // A successful reliable send proves our side of the link is up, so it
+            // counts as liveness too. This decouples the watchdog from the Mac's
+            // keepalive ACK: a healthy connection is never torn down just because
+            // an ACK was slow or the Mac build doesn't reply. A genuinely dead
+            // link still recovers — the send eventually throws or MCSession flips
+            // to `.notConnected`, and the Mac's own receive watchdog reconnects.
+            lastReceivedTime = Date()
             print("💓 Sent keepalive")
         } catch {
             print("⚠️ Keepalive failed: \(error.localizedDescription)")
