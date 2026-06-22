@@ -44,7 +44,25 @@ class iPhoneConnectionManager: NSObject, ObservableObject {
     private var reconnectTimer: Timer?
     private var keepaliveTimer: Timer?
     private let keepaliveInterval: TimeInterval = 3.0  // Send keepalive every 3 seconds
-    private let reconnectDelay: TimeInterval = 1.0     // Wait 1 second before reconnecting
+    private let reconnectDelay: TimeInterval = 1.0     // Base delay before reconnecting
+
+    // Exponential backoff with jitter, so a flapping Mac doesn't cause a tight
+    // invitation storm. Reset to 0 on every successful connection.
+    private var reconnectAttempts = 0
+    private let maxReconnectDelay: TimeInterval = 8.0
+
+    // Guards against firing overlapping invitations (the reconnect timer and
+    // `foundPeer` can both try to connect to the same Mac at once, which makes
+    // MultipeerConnectivity bounce the connection).
+    private var isInviting = false
+    private var inviteGuardTimer: Timer?
+
+    // MARK: - Connection Health Watchdog
+    // Detects a half-open link where MCSession still says `.connected` but the
+    // Mac's keepalive ACKs have stopped arriving, and forces a clean reconnect.
+    private var watchdogTimer: Timer?
+    private var lastReceivedTime = Date()
+    private let staleTimeout: TimeInterval = 15.0  // ~5 missed 3s keepalives
 
     // MARK: - Haptic Feedback
     private let feedbackGenerator = UIImpactFeedbackGenerator(style: .medium)
@@ -93,7 +111,7 @@ class iPhoneConnectionManager: NSObject, ObservableObject {
 
     // MARK: - Initialization
     override init() {
-        self.myPeerID = MCPeerID(displayName: UIDevice.current.name)
+        self.myPeerID = RemoteServiceConfig.persistentPeerID(displayName: UIDevice.current.name)
         super.init()
         debugLog("Initializing with peer ID: \(myPeerID.displayName)", level: .info)
         setupSession()
@@ -127,6 +145,8 @@ class iPhoneConnectionManager: NSObject, ObservableObject {
     
     private func setupSession() {
         debugLog("Setting up session with encryption: optional", level: .network)
+        // Detach any prior session so a discarded one can't deliver late callbacks.
+        session?.delegate = nil
         session = MCSession(
             peer: myPeerID,
             securityIdentity: nil,
@@ -175,12 +195,43 @@ class iPhoneConnectionManager: NSObject, ObservableObject {
         keepaliveTimer = nil
     }
 
+    // MARK: - Connection Health Watchdog
+    private func startWatchdog() {
+        stopWatchdog()
+        lastReceivedTime = Date()
+        watchdogTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
+            self?.checkConnectionHealth()
+        }
+    }
+
+    private func stopWatchdog() {
+        watchdogTimer?.invalidate()
+        watchdogTimer = nil
+    }
+
+    private func checkConnectionHealth() {
+        guard isConnected else { return }
+        let elapsed = Date().timeIntervalSince(lastReceivedTime)
+        if elapsed > staleTimeout {
+            debugLog("Watchdog: no reply for \(Int(elapsed))s, forcing reconnect", level: .warning)
+            // Disconnecting fires `.notConnected`, which schedules a reconnect.
+            session?.disconnect()
+        }
+    }
+
     private func sendKeepalive() {
         guard let session = session, !session.connectedPeers.isEmpty else { return }
         guard let data = RemoteCommand.keepalive.rawValue.data(using: .utf8) else { return }
 
         do {
             try session.send(data, toPeers: session.connectedPeers, with: .reliable)
+            // A successful reliable send proves our side of the link is up, so it
+            // counts as liveness too. This decouples the watchdog from the Mac's
+            // keepalive ACK: a healthy connection is never torn down just because
+            // an ACK was slow or the Mac build doesn't reply. A genuinely dead
+            // link still recovers — the send eventually throws or MCSession flips
+            // to `.notConnected`, and the Mac's own receive watchdog reconnects.
+            lastReceivedTime = Date()
             print("💓 Sent keepalive")
         } catch {
             print("⚠️ Keepalive failed: \(error.localizedDescription)")
@@ -190,7 +241,12 @@ class iPhoneConnectionManager: NSObject, ObservableObject {
     // MARK: - Auto Reconnect
     private func scheduleReconnect() {
         reconnectTimer?.invalidate()
-        reconnectTimer = Timer.scheduledTimer(withTimeInterval: reconnectDelay, repeats: false) { [weak self] _ in
+        // Exponential backoff (1, 2, 4, 8…s capped) plus a little jitter.
+        let backoff = min(reconnectDelay * pow(2.0, Double(reconnectAttempts)), maxReconnectDelay)
+        let delay = backoff + Double.random(in: 0...0.5)
+        reconnectAttempts += 1
+        debugLog("Scheduling reconnect in \(String(format: "%.1f", delay))s (attempt \(reconnectAttempts))", level: .info)
+        reconnectTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
             self?.attemptReconnect()
         }
     }
@@ -229,9 +285,24 @@ class iPhoneConnectionManager: NSObject, ObservableObject {
             lastError = "Session not initialized"
             return
         }
+        guard !isConnected else { return }
+        // Skip if an invitation is already in flight — avoids overlapping invites
+        // from the reconnect timer and browser(foundPeer:) racing each other.
+        guard !isInviting else {
+            debugLog("Skipping duplicate invite to \(peer.displayName) (already inviting)", level: .info)
+            return
+        }
 
-        debugLog("Inviting peer: \(peer.displayName) (timeout: 30s)", level: .network)
-        browser.invitePeer(peer, to: session, withContext: nil, timeout: 30)
+        isInviting = true
+        inviteGuardTimer?.invalidate()
+        // Backstop just past the invite timeout, in case the invitation fails
+        // silently without a `.notConnected` callback to clear the flag.
+        inviteGuardTimer = Timer.scheduledTimer(withTimeInterval: 16.0, repeats: false) { [weak self] _ in
+            self?.isInviting = false
+        }
+
+        debugLog("Inviting peer: \(peer.displayName) (timeout: 15s)", level: .network)
+        browser.invitePeer(peer, to: session, withContext: nil, timeout: 15)
         statusMessage = "Connecting to \(peer.displayName)..."
         sessionState = "Inviting \(peer.displayName)..."
     }
@@ -241,7 +312,12 @@ class iPhoneConnectionManager: NSObject, ObservableObject {
         lastConnectedMacName = nil
         reconnectTimer?.invalidate()
         reconnectTimer = nil
+        reconnectAttempts = 0
+        inviteGuardTimer?.invalidate()
+        inviteGuardTimer = nil
+        isInviting = false
         stopKeepalive()
+        stopWatchdog()
         session?.disconnect()
         connectedMac = nil
         isConnected = false
@@ -293,7 +369,12 @@ extension iPhoneConnectionManager: MCSessionDelegate {
                 self.statusMessage = "Connected to \(peerID.displayName)"
                 self.reconnectTimer?.invalidate()
                 self.reconnectTimer = nil
+                self.reconnectAttempts = 0
+                self.isInviting = false
+                self.inviteGuardTimer?.invalidate()
+                self.inviteGuardTimer = nil
                 self.startKeepalive()
+                self.startWatchdog()
                 self.updateWatchWithConnectionStatus()
                 self.isSearching = false
                 self.lastError = nil
@@ -307,10 +388,14 @@ extension iPhoneConnectionManager: MCSessionDelegate {
             case .notConnected:
                 self.debugLog("SESSION STATE: Not connected (was: \(peerID.displayName))", level: .warning)
                 self.sessionState = "Not connected"
+                self.isInviting = false
+                self.inviteGuardTimer?.invalidate()
+                self.inviteGuardTimer = nil
                 if self.connectedMac == peerID || self.lastConnectedMacName == peerID.displayName {
                     self.connectedMac = nil
                     self.isConnected = false
                     self.stopKeepalive()
+                    self.stopWatchdog()
                     self.updateWatchWithConnectionStatus()
                     LiveActivityManager.shared.endActivity()
                     if self.lastConnectedMacName != nil {
@@ -329,8 +414,12 @@ extension iPhoneConnectionManager: MCSessionDelegate {
     }
     
     func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
-        // Mac could send data back (e.g., slide number, notes)
-        // Not used in basic version
+        // Any inbound packet (notably the Mac's keepalive ACK) proves the link
+        // is still alive — feed the watchdog so it doesn't tear down a healthy
+        // but quiet connection.
+        DispatchQueue.main.async {
+            self.lastReceivedTime = Date()
+        }
     }
     
     // Required delegate methods
