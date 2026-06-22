@@ -78,7 +78,7 @@ deck/
 | App | Distribution | Link |
 |-----|--------------|------|
 | Deck | GitHub Releases (DMG) | [Releases](https://github.com/douinc/deck/releases) |
-| Deck | Homebrew Cask | `brew tap douinc/deck https://github.com/douinc/deck && brew install --cask deck` |
+| Deck | Homebrew Cask | `brew tap douinc/tap && brew install --cask deck` |
 | Deck | App Store | [App Store](https://apps.apple.com/us/app/deck/id6758130180) |
 | DeckWatch | Bundled with iOS app | Installs automatically via Watch app |
 

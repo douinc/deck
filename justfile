@@ -339,20 +339,15 @@ notary-log:
 # Homebrew Tap
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Update the self-contained Homebrew cask (Casks/deck.rb) after a GitHub release.
-# Deck ships its own tap from this repo, so douinc/homebrew-tap (the clicker cask) is never touched.
+# Refresh the deck cask in the shared douinc tap (github.com/douinc/homebrew-tap) after a release.
+# The deck cask lives alongside clicker-remote-receiver in that repo; this triggers the tap's
+# update-deck-cask workflow, which downloads the published DMG and recomputes the sha256.
+# Requires the GitHub release (Deck-{{ version }}.dmg) to exist first, and `gh` auth with
+# workflow access to douinc/homebrew-tap.
 update-tap:
     #!/usr/bin/env bash
     set -euo pipefail
-    DMG="./build/{{ dmg_name }}-{{ version }}.dmg"
-    if [ ! -f "$DMG" ]; then
-        echo "❌ $DMG not found. Run 'just release-mac' and create the GitHub release first."; exit 1
-    fi
-    SHA=$(shasum -a 256 "$DMG" | awk '{print $1}')
-    echo "🍺 Updating Casks/deck.rb → v{{ version }} (sha256: $SHA)"
-    sed -i '' "s/version(\"[^\"]*\")/version(\"{{ version }}\")/" Casks/deck.rb
-    sed -i '' "s/sha256(\"[^\"]*\")/sha256(\"$SHA\")/" Casks/deck.rb
-    git add Casks/deck.rb
-    git commit -m "Update Deck cask to v{{ version }}"
-    git push
-    echo "✅ Cask updated. Install: brew tap douinc/deck https://github.com/douinc/deck && brew install --cask deck"
+    echo "🍺 Dispatching homebrew-tap to update deck → v{{ version }} ..."
+    gh workflow run update-deck-cask.yml -R douinc/homebrew-tap -f version="{{ version }}"
+    echo "✅ Dispatched. Watch the run:  gh run watch -R douinc/homebrew-tap"
+    echo "   Install: brew tap douinc/tap && brew install --cask deck"

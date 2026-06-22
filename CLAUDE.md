@@ -63,26 +63,39 @@ The notarized DMG is created at `./build/Deck-{version}.dmg`.
 
 Create GitHub release and update Homebrew tap:
 ```bash
-# Create the release
+# Create the release (the asset MUST be named Deck-{version}.dmg to match the cask URL)
 gh release create v1.12 ./build/Deck-1.12.dmg --title 'Deck v1.12' --notes 'Release notes'
 
-# Update the self-contained Homebrew cask (auto-calculates SHA256)
+# Refresh the deck cask in the shared douinc tap (auto-calculates SHA256)
 just update-tap
 ```
 
-Deck ships its own Homebrew tap from this repo (`Casks/deck.rb`), independent of the
-legacy `douinc/homebrew-tap` clicker cask (which is never modified). The `update-tap`
-command:
-1. Reads the freshly built `./build/Deck-{version}.dmg`
-2. Calculates the SHA256 hash
-3. Updates `Casks/deck.rb` (version + sha256)
-4. Commits and pushes to `douinc/deck`
+Deck's Homebrew cask lives in the shared `douinc/homebrew-tap` repo
+(`Casks/deck.rb`), alongside the legacy `clicker-remote-receiver` cask — a single
+tap serves both products. The deck cask is NOT shipped from this repo anymore.
+The `update-tap` command:
+1. Triggers the `update-deck-cask` workflow in `douinc/homebrew-tap` via `gh workflow run`
+2. That workflow downloads the published `Deck-{version}.dmg` from this repo's GitHub release
+3. Recomputes the SHA256, updates `Casks/deck.rb` (version + sha256), and commits/pushes
+
+Requires `gh` auth with workflow access to `douinc/homebrew-tap`, and the GitHub
+release to exist first. The release workflow (`.github/workflows/release.yml`) can
+also auto-refresh the cask by sending a `repository_dispatch` (type `deck-release`)
+to the tap.
 
 Users install with:
 ```bash
-brew tap douinc/deck https://github.com/douinc/deck
+brew tap douinc/tap
 brew install --cask deck
+# If Homebrew reports an untrusted tap (the cask runs a postflight to open the
+# Accessibility pane), trust it once:
+brew trust douinc/tap
 ```
+
+> Tap naming: the repo is `douinc/homebrew-tap`, which Homebrew resolves as the
+> tap `douinc/tap` (the `homebrew-` prefix is stripped). The old standalone
+> `douinc/deck` tap is retired; existing users should `brew untap douinc/deck`
+> and re-tap `douinc/tap`.
 
 ## Key Architecture Decisions
 

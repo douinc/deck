@@ -110,24 +110,26 @@ gh release create v1.0 \
 
 ## Homebrew Distribution
 
-Deck ships its own self-contained Homebrew tap from this repo (`Casks/deck.rb`). The legacy `douinc/homebrew-tap` (clicker cask) is never modified.
+Deck's cask lives in the shared **`douinc/homebrew-tap`** repo (`Casks/deck.rb`), alongside the legacy `clicker-remote-receiver` cask — one tap serves both products. The cask is no longer shipped from this repo.
 
 ### Update Cask for New Release
 
-After building the DMG (`just release-mac`) and creating the GitHub release, update the cask:
+After building the DMG (`just release-mac`) and creating the GitHub release, refresh the cask:
 
 ```bash
 just update-tap
 ```
 
-This reads the local `./build/Deck-<version>.dmg`, calculates its SHA256, updates `Casks/deck.rb` (version + sha256), then commits and pushes to `douinc/deck`.
+This dispatches the `update-deck-cask` workflow in `douinc/homebrew-tap`, which downloads the published `Deck-<version>.dmg`, recomputes its SHA256, updates `Casks/deck.rb` (version + sha256), and commits/pushes — all in the tap repo. Requires `gh` auth with workflow access to `douinc/homebrew-tap`.
 
 ### Install from Tap
 
 ```bash
-brew tap douinc/deck https://github.com/douinc/deck
+brew tap douinc/tap
 brew install --cask deck
 ```
+
+> The repo `douinc/homebrew-tap` resolves to the tap name `douinc/tap` (Homebrew strips the `homebrew-` prefix). The old standalone `douinc/deck` tap is retired. Because the cask runs a `postflight` (it opens the Accessibility pane), Homebrew may ask you to trust the tap once: `brew trust douinc/tap`.
 
 ## Build Configuration
 

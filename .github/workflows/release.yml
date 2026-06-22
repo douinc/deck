@@ -95,31 +95,33 @@ jobs:
           # Staple the notarization ticket
           xcrun stapler staple "$PRODUCT_NAME.app"
 
-      - name: Create DMG
-        run: |
-          # Create DMG
-          hdiutil create -volname "$PRODUCT_NAME" \
-            -srcfolder "build/export/$PRODUCT_NAME.app" \
-            -ov -format UDZO \
-            "build/$PRODUCT_NAME.dmg"
-
       - name: Get Version
         id: version
         env:
           GIT_REF: ${{ github.ref }}
         run: echo "version=${GIT_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
+      - name: Create DMG
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          # Asset name MUST match the Homebrew cask URL: Deck-<version>.dmg
+          hdiutil create -volname "$PRODUCT_NAME" \
+            -srcfolder "build/export/$PRODUCT_NAME.app" \
+            -ov -format UDZO \
+            "build/$PRODUCT_NAME-$VERSION.dmg"
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: build/${{ env.PRODUCT_NAME }}.dmg
+          files: build/${{ env.PRODUCT_NAME }}-${{ steps.version.outputs.version }}.dmg
           name: Deck ${{ steps.version.outputs.version }}
           body: |
             ## Installation
 
             ### Option 1: Homebrew (Recommended)
             ```bash
-            brew tap douinc/deck https://github.com/douinc/deck
+            brew tap douinc/tap
             brew install --cask deck
             ```
 

@@ -109,9 +109,10 @@ The Mac app runs in your menu bar and receives commands from your iPhone.
 
 **Option A: Homebrew (Recommended)**
 ```bash
-brew tap douinc/deck https://github.com/douinc/deck
+brew tap douinc/tap
 brew install --cask deck
 ```
+> If Homebrew reports an untrusted tap, run `brew trust douinc/tap` once, then re-run the install.
 
 **Option B: Download DMG**
 
