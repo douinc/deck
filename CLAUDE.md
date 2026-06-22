@@ -3,18 +3,18 @@
 ## Project Overview
 
 This is a SwiftUI-based presentation remote system with three apps:
-- **Mac App** (`Deck` v1.11): Menu bar app that receives commands and sends keystrokes to presentation software
-- **iPhone App** (`Deck` v1.11): Remote control with vertical slide navigation and presentation timer
-- **Apple Watch App** (`DeckWatch` v1.11): Companion watch app with gesture-based slide control using double tap motion for next slide
+- Mac App (`Deck` v1.12): Menu bar app that receives commands and sends keystrokes to presentation software
+- iPhone App (`Deck` v1.12): Remote control with vertical slide navigation and presentation timer
+- Apple Watch App (`DeckWatch` v1.12): Companion watch app with gesture-based slide control using double tap motion for next slide
 
 ## Tech Stack
 
-- **Language**: Swift 5.9
-- **UI Framework**: SwiftUI
-- **Networking**: MultipeerConnectivity (Mac↔iPhone), WatchConnectivity (iPhone↔Watch)
-- **Build System**: XcodeGen + xcodebuild (CLI-based, no Xcode GUI required)
-- **Platforms**: macOS 14.0+, iOS 18.0+, watchOS 10.0+
-- **Design**: Apple liquid glass aesthetic (dark mode, translucent materials)
+- Language: Swift 5.9
+- UI Framework: SwiftUI
+- Networking: MultipeerConnectivity (Mac↔iPhone), WatchConnectivity (iPhone↔Watch)
+- Build System: XcodeGen + xcodebuild (CLI-based, no Xcode GUI required)
+- Platforms: macOS 14.0+, iOS 18.0+, watchOS 10.0+
+- Design: Apple liquid glass aesthetic (dark mode, translucent materials)
 
 ## Documentation
 
@@ -61,10 +61,10 @@ The full pipeline:
 
 The notarized DMG is created at `./build/Deck-{version}.dmg`.
 
-**Create GitHub release and update Homebrew tap:**
+Create GitHub release and update Homebrew tap:
 ```bash
 # Create the release
-gh release create v1.11 ./build/Deck-1.11.dmg --title 'Deck v1.11' --notes 'Release notes'
+gh release create v1.12 ./build/Deck-1.12.dmg --title 'Deck v1.12' --notes 'Release notes'
 
 # Update the self-contained Homebrew cask (auto-calculates SHA256)
 just update-tap

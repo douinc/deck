@@ -1,5 +1,5 @@
 cask("deck") do
-  version("1.11")
+  version("1.12")
   sha256("0000000000000000000000000000000000000000000000000000000000000000")
 
   url("https://github.com/douinc/deck/releases/download/v#{version}/Deck-#{version}.dmg")

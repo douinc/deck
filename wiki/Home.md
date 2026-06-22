@@ -17,9 +17,9 @@ Welcome to the Deck developer documentation. This wiki contains technical docume
 
 Deck is a presentation remote system consisting of three apps:
 
-- **Deck** (iOS v1.11) — Remote control app for iPhone
-- **Deck** (macOS v1.11) — Menu bar app that receives commands
-- **DeckWatch** (watchOS v1.11) — Apple Watch companion for wrist-based control
+- Deck (iOS v1.12) — Remote control app for iPhone
+- Deck (macOS v1.12) — Menu bar app that receives commands
+- DeckWatch (watchOS v1.12) — Apple Watch companion for wrist-based control
 
 ```mermaid
 %%{init: {'theme': 'dark'}}%%
