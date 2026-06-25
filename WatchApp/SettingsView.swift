@@ -4,6 +4,32 @@ struct SettingsView: View {
     @EnvironmentObject var gestureManager: GestureManager
     @AppStorage("gestureMode") private var gestureMode = "doubleTap"
     @AppStorage("invertCrown") private var invertCrown = false
+    @AppStorage("crownControlEnabled") private var crownControlEnabled = true
+    @AppStorage("crownDetentsPerSlide") private var crownDetentsPerSlide = 1
+
+    private var crownFooterText: String {
+        guard crownControlEnabled else {
+            return "Digital Crown slide navigation is disabled to prevent accidental slide changes."
+        }
+
+        let direction = invertCrown
+            ? "clockwise = previous slide, counterclockwise = next slide"
+            : "clockwise = next slide, counterclockwise = previous slide"
+
+        let sensitivity: String
+        switch crownDetentsPerSlide {
+        case 1:
+            sensitivity = "Fast: every crown detent advances a slide."
+        case 2:
+            sensitivity = "Balanced: two detents are required per slide."
+        case 3:
+            sensitivity = "Deliberate: three detents are required per slide."
+        default:
+            sensitivity = "Locked-in: five detents are required per slide."
+        }
+
+        return "\(sensitivity) Crown \(direction)."
+    }
 
     var body: some View {
         List {
@@ -71,14 +97,26 @@ struct SettingsView: View {
             }
 
             Section {
+                Toggle(isOn: $crownControlEnabled) {
+                    Label("Crown Control", systemImage: "digitalcrown.horizontal.arrow.clockwise")
+                        .font(.system(size: 15))
+                }
+
+                Picker("Sensitivity", selection: $crownDetentsPerSlide) {
+                    Text("Fast").tag(1)
+                    Text("Balanced").tag(2)
+                    Text("Deliberate").tag(3)
+                    Text("Locked-in").tag(5)
+                }
+                .disabled(!crownControlEnabled)
+
                 Toggle(isOn: $invertCrown) {
                     Label("Invert Crown", systemImage: "digitalcrown.horizontal.arrow.counterclockwise")
                         .font(.system(size: 15))
                 }
+                .disabled(!crownControlEnabled)
             } footer: {
-                Text(invertCrown
-                     ? "Crown clockwise = previous slide, counterclockwise = next slide."
-                     : "Crown clockwise = next slide, counterclockwise = previous slide.")
+                Text(crownFooterText)
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
             }
