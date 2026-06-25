@@ -31,7 +31,7 @@ targets:
       path: MacApp/Info.plist
       properties:
         CFBundleName: Deck
-        CFBundleShortVersionString: "1.12"
+        CFBundleShortVersionString: "1.13"
         LSUIElement: true
         NSBonjourServices:
           - _clickerremote._tcp
@@ -48,7 +48,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.dou.clicker-mac
         PRODUCT_NAME: Deck
         MACOSX_DEPLOYMENT_TARGET: "14.0"
-        MARKETING_VERSION: "1.12"
+        MARKETING_VERSION: "1.13"
         CURRENT_PROJECT_VERSION: "1"
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_ENTITLEMENTS: MacApp/DeckMac.entitlements
@@ -83,7 +83,7 @@ targets:
       path: iPhoneApp/Info.plist
       properties:
         CFBundleName: Deck
-        CFBundleShortVersionString: "1.12"
+        CFBundleShortVersionString: "1.13"
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
@@ -97,7 +97,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.dou.clicker-ios
         PRODUCT_NAME: Deck
         IPHONEOS_DEPLOYMENT_TARGET: "18.0"
-        MARKETING_VERSION: "1.12"
+        MARKETING_VERSION: "1.13"
         CURRENT_PROJECT_VERSION: "1"
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: HD35YQ72U4
@@ -123,7 +123,7 @@ targets:
       path: LiveActivityWidget/Info.plist
       properties:
         CFBundleDisplayName: Deck
-        CFBundleShortVersionString: "1.12"
+        CFBundleShortVersionString: "1.13"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
@@ -131,7 +131,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.dou.clicker-ios.LiveActivity
         PRODUCT_NAME: DeckLiveActivity
         IPHONEOS_DEPLOYMENT_TARGET: "18.0"
-        MARKETING_VERSION: "1.12"
+        MARKETING_VERSION: "1.13"
         CURRENT_PROJECT_VERSION: "1"
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: HD35YQ72U4
@@ -153,7 +153,7 @@ targets:
       path: WatchApp/Info.plist
       properties:
         CFBundleName: Deck
-        CFBundleShortVersionString: "1.12"
+        CFBundleShortVersionString: "1.13"
         WKApplication: true
         WKCompanionAppBundleIdentifier: com.dou.clicker-ios
         WKBackgroundModes:
@@ -169,7 +169,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.dou.clicker-ios.watchkitapp
         PRODUCT_NAME: DeckWatch
         WATCHOS_DEPLOYMENT_TARGET: "10.0"
-        MARKETING_VERSION: "1.12"
+        MARKETING_VERSION: "1.13"
         CURRENT_PROJECT_VERSION: "1"
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: HD35YQ72U4

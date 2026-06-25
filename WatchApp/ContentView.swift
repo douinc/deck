@@ -12,7 +12,10 @@ struct ContentView: View {
     @State private var showSettings = false
     @State private var crownOffset: Double = 0
     @State private var lastCrownDetent: Int = 0
+    @State private var crownDetentAccumulator: Int = 0
     @AppStorage("invertCrown") private var invertCrown = false
+    @AppStorage("crownControlEnabled") private var crownControlEnabled = true
+    @AppStorage("crownDetentsPerSlide") private var crownDetentsPerSlide = 1
 
     private var isFlickMode: Bool { gestureMode == "flickWrist" }
 
@@ -49,16 +52,38 @@ struct ContentView: View {
             isContinuous: true
         )
         .onChange(of: crownOffset) { _, newValue in
-            let detent = Int(newValue.rounded())
-            guard detent != lastCrownDetent else { return }
-            let isForward = invertCrown ? (detent < lastCrownDetent) : (detent > lastCrownDetent)
-            WKInterfaceDevice.current().play(.click)
-            if isForward {
+            handleCrownChange(newValue)
+        }
+        .onChange(of: crownDetentsPerSlide) { _, _ in
+            crownDetentAccumulator = 0
+        }
+    }
+
+    // MARK: - Digital Crown
+
+    private func handleCrownChange(_ newValue: Double) {
+        let detent = Int(newValue.rounded())
+        let delta = detent - lastCrownDetent
+        guard delta != 0 else { return }
+        lastCrownDetent = detent
+
+        guard crownControlEnabled else {
+            crownDetentAccumulator = 0
+            return
+        }
+
+        crownDetentAccumulator += invertCrown ? -delta : delta
+        let detentsNeeded = max(crownDetentsPerSlide, 1)
+
+        while abs(crownDetentAccumulator) >= detentsNeeded {
+            if crownDetentAccumulator > 0 {
                 connectionManager.nextSlide()
+                crownDetentAccumulator -= detentsNeeded
             } else {
                 connectionManager.previousSlide()
+                crownDetentAccumulator += detentsNeeded
             }
-            lastCrownDetent = detent
+            WKInterfaceDevice.current().play(.click)
         }
     }
 
