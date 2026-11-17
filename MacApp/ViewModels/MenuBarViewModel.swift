@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 import Combine
 import MultipeerConnectivity
 
@@ -15,6 +16,7 @@ final class MenuBarViewModel: ObservableObject {
     @Published private(set) var isListening: Bool = false
     @Published private(set) var hasAccessibilityPermission: Bool = false
     @Published private(set) var availableUpdate: String?
+    @Published private(set) var localNetworkDenied: Bool = false
 
     // MARK: - Services
 
@@ -87,6 +89,11 @@ final class MenuBarViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .assign(to: &$hasAccessibilityPermission)
 
+        // Local Network privacy (macOS 15+)
+        connectionManager.$localNetworkDenied
+            .receive(on: DispatchQueue.main)
+            .assign(to: &$localNetworkDenied)
+
         // Available update
         updateChecker.$availableUpdate
             .receive(on: DispatchQueue.main)
@@ -122,6 +129,12 @@ final class MenuBarViewModel: ObservableObject {
 
     func requestPermissions() {
         permissionService.requestPermission()
+    }
+
+    /// Opens System Settings › Privacy & Security › Local Network.
+    func openLocalNetworkSettings() {
+        let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_LocalNetwork")!
+        NSWorkspace.shared.open(url)
     }
 
     // MARK: - Debug Methods

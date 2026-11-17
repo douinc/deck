@@ -39,6 +39,17 @@ struct MenuBarView: View {
 
             Divider()
 
+            // Local Network permission (macOS 15+). Without it the iPhone can't
+            // discover this Mac at all, so surface it prominently.
+            if viewModel.localNetworkDenied {
+                Button("⚠️ Allow Local Network Access…") {
+                    viewModel.openLocalNetworkSettings()
+                }
+                Text("Required for your iPhone to find this Mac")
+
+                Divider()
+            }
+
             // Accessibility permission status
             if viewModel.hasAccessibilityPermission {
                 Label("Accessibility OK", systemImage: "checkmark.circle")

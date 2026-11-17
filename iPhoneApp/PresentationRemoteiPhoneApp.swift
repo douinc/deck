@@ -60,6 +60,10 @@ struct SubscriptionGateView: View {
                 Task {
                     await subscriptionManager.updateSubscriptionStatus()
                 }
+                // Restart Mac discovery: recovers a browser that went stale in
+                // the background or was started before the Local Network
+                // permission alert was answered (first launch).
+                connectionManager.handleAppBecameActive()
             }
         }
     }
@@ -170,6 +174,12 @@ struct ConnectionView: View {
                     .foregroundStyle(.secondary)
             }
 
+            // Local Network access denied — discovery can't work at all.
+            if connectionManager.localNetworkDenied {
+                LocalNetworkDeniedCard()
+                    .padding(.horizontal, 24)
+            }
+
             // Available Macs
             if !connectionManager.availableMacs.isEmpty {
                 VStack(spacing: 12) {
@@ -208,6 +218,60 @@ struct ConnectionView: View {
         .sheet(isPresented: $showDebugView) {
             ConnectionDebugView(connectionManager: connectionManager)
         }
+        .onChange(of: connectionManager.isSearchTakingLong) { _, takingLong in
+            // Nothing found after a while: proactively show the setup steps
+            // rather than leaving the user staring at "Searching for Mac...".
+            if takingLong && connectionManager.availableMacs.isEmpty {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    isHelpExpanded = true
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Local Network Denied Card
+/// Shown when iOS has denied Local Network access, which makes Mac discovery
+/// impossible. Points the user straight at the fix.
+struct LocalNetworkDeniedCard: View {
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: "wifi.exclamationmark")
+                    .font(.title3)
+                    .foregroundStyle(.orange)
+                Text("Local Network access is off")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.white)
+            }
+
+            Text("Deck needs Local Network access to find your Mac. Turn on Local Network for Deck in Settings, then come back.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    openURL(url)
+                }
+            } label: {
+                Text("Open Settings")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(.orange.opacity(0.8), in: RoundedRectangle(cornerRadius: 10))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(16)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .strokeBorder(.orange.opacity(0.4), lineWidth: 1)
+        )
     }
 }
 
@@ -253,17 +317,27 @@ struct HelpSetupSection: View {
                     Divider()
                         .background(.white.opacity(0.1))
 
-                    Text("1. Download and install Deck Mac Menubar App from the official link.")
+                    Text("1. Install the free Deck app for Mac (link below) and open it. Look for the Deck icon in your Mac's menu bar.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
 
-                    Text("2. Grant Accessibility for Deck and restart it. Then press 'Start Listening'.")
+                    Text("2. Click the menu bar icon. It should say \"Waiting for iPhone to connect...\". If it says \"Stopped\", click \"Start Listening\".")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
 
-                    Text("3. Connect iPhone and Mac to the same network and your Mac will automatically appear in Deck iOS app. Hotspot also works.")
+                    Text("3. Put both devices on the same Wi-Fi network, or connect the Mac to your iPhone's hotspot. Guest or public Wi-Fi and VPNs can block discovery.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Text("4. Allow Local Network access for Deck on both devices: on iPhone in Settings › Deck, and on Mac (macOS 15+) in System Settings › Privacy & Security › Local Network.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Text("5. Grant Accessibility permission on the Mac so Deck can change slides.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)

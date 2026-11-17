@@ -69,12 +69,19 @@ final class AppCoordinator: ObservableObject {
 
         updateChecker.checkIfNeeded()
 
+        // Always become discoverable right away. Discovery must NOT be gated on
+        // Accessibility or on finishing onboarding: previously a first-time user
+        // who closed the welcome window, hadn't granted Accessibility yet, or
+        // relaunched via "Restart Deck" (which happens before onboarding is
+        // marked complete) ended up with a Mac that never advertised, so the
+        // iPhone could never find it. Accessibility only affects whether
+        // received commands can be turned into keystrokes, and the menu bar
+        // already prompts for it.
+        startListening()
+
         if !preferences.hasCompletedOnboarding {
             // First launch - show welcome window
             showWelcome = true
-        } else if permissionService.hasAccessibilityPermission {
-            // Returning user with permission - auto-start listening
-            startListeningIfReady()
         }
     }
 
@@ -82,9 +89,9 @@ final class AppCoordinator: ObservableObject {
     func handleOnboardingComplete() {
         showWelcome = false
 
-        // Auto-start listening after onboarding
-        if permissionService.hasAccessibilityPermission {
-            startListeningIfReady()
+        // Make sure we're discoverable (no-op if already advertising)
+        if !connectionManager.isAdvertising {
+            startListening()
         }
 
         // Bring menu bar to focus
@@ -95,12 +102,10 @@ final class AppCoordinator: ObservableObject {
 
     // MARK: - Private Methods
 
-    private func startListeningIfReady() {
-        guard permissionService.hasAccessibilityPermission else {
-            print("Cannot auto-start: missing accessibility permission")
-            return
+    private func startListening() {
+        if !permissionService.hasAccessibilityPermission {
+            print("Listening without Accessibility permission: commands won't send keystrokes until it's granted")
         }
-
         connectionManager.startAdvertising()
         print("Auto-started listening for connections")
     }
