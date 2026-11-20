@@ -1,0 +1,31 @@
+<template>
+  <style>
+    @font-face { font-family: "SF Pro Rounded"; font-weight: 500; src: local("SFProRounded-Medium"), local("SF Pro Rounded Medium"); }
+    @font-face { font-family: "SF Pro Rounded"; font-weight: 700; src: local("SFProRounded-Bold"), local("SF Pro Rounded Bold"); }
+    #root { position: absolute; inset: 0; overflow: hidden; }
+    .tm-slide { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; font-family: var(--font-display), "SF Pro Rounded", "Nunito", sans-serif; }
+    .tm-h { position: absolute; left: 120px; font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; }
+    .tm-sub { position: absolute; left: 124px; font-weight: 500; letter-spacing: -0.005em; white-space: nowrap; }
+    .tm-w { display: inline-block; }
+    #tm-slide { background: var(--color-blue); color: #fff; }
+    #tm-title { top: 296px; font-size: 190px; line-height: 196px; }
+    #tm-sub { top: 730px; font-size: 54px; line-height: 70px; }
+  </style>
+  <div id="root" data-composition-id="timer" data-width="1920" data-height="1080">
+    <div class="tm-slide" id="tm-slide">
+      <div class="tm-h" id="tm-title">Built-in<br />timer</div>
+      <div class="tm-sub" id="tm-sub">Haptic alerts at<br />custom intervals</div>
+    </div>
+  </div>
+  <script>
+    (() => {
+      const tl = gsap.timeline({ paused: true });
+      const PUSH = { duration: 0.5, ease: "power3.inOut" };
+      tl.fromTo("#tm-slide", { x: 1920 }, { x: 0, ...PUSH }, 0);
+      tl.fromTo("#tm-sub", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power2.out" }, 0.8);
+      // 2.5 (18.0)  tap -> push
+      tl.to("#tm-slide", { x: -1920, ...PUSH }, 2.5);
+      window.__timelines["timer"] = tl;
+    })();
+  </script>
+</template>

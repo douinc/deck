@@ -1,0 +1,38 @@
+<template>
+  <style>
+    @font-face { font-family: "SF Pro Rounded"; font-weight: 500; src: local("SFProRounded-Medium"), local("SF Pro Rounded Medium"); }
+    @font-face { font-family: "SF Pro Rounded"; font-weight: 700; src: local("SFProRounded-Bold"), local("SF Pro Rounded Bold"); }
+    #root { position: absolute; inset: 0; overflow: hidden; }
+    .fl-slide { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; font-family: var(--font-display), "SF Pro Rounded", "Nunito", sans-serif; }
+    .fl-h { position: absolute; left: 120px; font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; }
+    .fl-sub { position: absolute; left: 124px; font-weight: 500; letter-spacing: -0.005em; white-space: nowrap; }
+    .fl-w { display: inline-block; }
+    #fl-slide { background: var(--color-ink); color: #fff; }
+    #fl-plate { position: absolute; left: 96px; top: 0; width: 608px; height: 1080px; overflow: hidden; background: #000; }
+    #fl-video { position: absolute; left: 0; top: 0; width: 608px; height: 1080px; object-fit: cover; }
+    #fl-title { left: 772px; top: 280px; font-size: 176px; line-height: 180px; }
+    #fl-sub { left: 778px; top: 680px; font-size: 56px; line-height: 70px; color: rgba(255,255,255,0.7); }
+  </style>
+  <div id="root" data-composition-id="flick" data-width="1920" data-height="1080">
+    <div class="fl-slide" id="fl-slide">
+      <!-- public/demo.MP4: a wrist flick changes the slide on the wall. Slide changes land at 13.0 s and 14.3 s of the film. -->
+      <div id="fl-plate">
+        <video id="fl-video" class="clip" src="assets/demo.mp4" muted playsinline data-start="0" data-duration="4.5"
+          data-media-start="4.2" data-playback-rate="0.9" data-track-index="0"></video>
+      </div>
+      <div class="fl-h" id="fl-title">Wrist<br />Flick</div>
+      <div class="fl-sub" id="fl-sub">Present from<br />your wrist</div>
+    </div>
+  </div>
+  <script>
+    (() => {
+      const tl = gsap.timeline({ paused: true });
+      const PUSH = { duration: 0.5, ease: "power3.inOut" };
+      tl.fromTo("#fl-slide", { y: 1080 }, { y: 0, duration: 0.4, ease: "power3.inOut" }, 0);
+      tl.fromTo("#fl-sub", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power2.out" }, 0.8);
+      // 4.0 (15.5)  tap -> push
+      tl.to("#fl-slide", { x: -1920, ...PUSH }, 4.0);
+      window.__timelines["flick"] = tl;
+    })();
+  </script>
+</template>

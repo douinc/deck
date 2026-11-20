@@ -1,0 +1,33 @@
+<template>
+  <style>
+    @font-face { font-family: "SF Pro Rounded"; font-weight: 500; src: local("SFProRounded-Medium"), local("SF Pro Rounded Medium"); }
+    @font-face { font-family: "SF Pro Rounded"; font-weight: 700; src: local("SFProRounded-Bold"), local("SF Pro Rounded Bold"); }
+    #root { position: absolute; inset: 0; overflow: hidden; }
+    .rv-slide { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; font-family: var(--font-display), "SF Pro Rounded", "Nunito", sans-serif; }
+    .rv-h { position: absolute; left: 120px; font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; }
+    .rv-sub { position: absolute; left: 124px; font-weight: 500; letter-spacing: -0.005em; white-space: nowrap; }
+    .rv-w { display: inline-block; }
+    #rv-slide { background: var(--color-blue); color: #fff; }
+    #rv-name { top: 196px; left: 108px; font-size: 400px; line-height: 420px; letter-spacing: -0.03em; }
+    #rv-sub { top: 690px; font-size: 60px; line-height: 76px; }
+  </style>
+  <div id="root" data-composition-id="reveal" data-width="1920" data-height="1080">
+    <div class="rv-slide" id="rv-slide">
+      <div class="rv-h" id="rv-name"><span class="rv-w">D</span><span class="rv-w">e</span><span class="rv-w">c</span><span class="rv-w">k</span></div>
+      <div class="rv-sub" id="rv-sub">Your presentation remote<br />for iPhone &amp; Apple Watch</div>
+    </div>
+  </div>
+  <script>
+    (() => {
+      const tl = gsap.timeline({ paused: true });
+      const PUSH = { duration: 0.5, ease: "power3.inOut" };
+      // The strike bar on the tension slide floods the frame (same rect: 120,634 1130x18)
+      tl.fromTo("#rv-slide", { clipPath: "inset(634px 670px 428px 120px)" }, { clipPath: "inset(0px 0px 0px 0px)", duration: 0.45, ease: "power2.inOut" }, 0);
+      tl.fromTo("#rv-name .rv-w", { opacity: 0, filter: "blur(10px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power2.out", stagger: 0.07 }, 0.3);
+      tl.fromTo("#rv-sub", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power2.out" }, 0.9);
+      // 2.5 (9.0)  double tap -> push
+      tl.to("#rv-slide", { x: -1920, ...PUSH }, 2.5);
+      window.__timelines["reveal"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,54 @@
+<template>
+  <style>
+    @font-face { font-family: "SF Pro Rounded"; font-weight: 500; src: local("SFProRounded-Medium"), local("SF Pro Rounded Medium"); }
+    @font-face { font-family: "SF Pro Rounded"; font-weight: 700; src: local("SFProRounded-Bold"), local("SF Pro Rounded Bold"); }
+    #root { position: absolute; inset: 0; overflow: hidden; }
+    .pt-slide { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; font-family: var(--font-display), "SF Pro Rounded", "Nunito", sans-serif; }
+    .pt-h { position: absolute; left: 120px; font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; }
+    .pt-sub { position: absolute; left: 124px; font-weight: 500; letter-spacing: -0.005em; white-space: nowrap; }
+    .pt-w { display: inline-block; }
+    #pt-slide { background: var(--color-paper); color: var(--color-ink); }
+    #pt-kicker { top: 128px; font-size: 46px; line-height: 60px; color: rgba(5,7,13,0.62); }
+    .pt-name { font-size: 138px; line-height: 150px; }
+    #pt-n1 { top: 236px; } #pt-n2 { top: 396px; } #pt-n3 { top: 556px; } #pt-n4 { top: 716px; }
+    /* SpotlightOverlay.swift: 65% black with a hole of 13% of the display height around the cursor */
+    #pt-dim { position: absolute; inset: 0; overflow: hidden; }
+    #pt-spot { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+    #pt-hole { position: absolute; left: -140px; top: -140px; width: 280px; height: 280px; border-radius: 50%; box-shadow: 0 0 0 3000px rgba(0,0,0,0.65); }
+    #pt-cursor { position: absolute; left: -11px; top: -11px; width: 63px; height: 90px; }
+  </style>
+  <div id="root" data-composition-id="pointer" data-width="1920" data-height="1080">
+    <div class="pt-slide" id="pt-slide">
+      <div class="pt-sub" id="pt-kicker">Works with any app that uses arrow keys</div>
+      <div class="pt-h pt-name" id="pt-n1">Keynote</div>
+      <div class="pt-h pt-name" id="pt-n2">PowerPoint</div>
+      <div class="pt-h pt-name" id="pt-n3">Google Slides</div>
+      <div class="pt-h pt-name" id="pt-n4">Figma</div>
+      <div id="pt-dim" data-layout-allow-occlusion data-layout-allow-overflow>
+        <div id="pt-spot">
+          <div id="pt-hole"></div>
+        </div>
+      </div>
+      <div id="pt-cursor-rig" style="position:absolute;left:0;top:0;width:0;height:0">
+        <img id="pt-cursor" src="assets/icons/cursor-arrow.png" alt="" />
+      </div>
+    </div>
+  </div>
+  <script>
+    (() => {
+      const tl = gsap.timeline({ paused: true });
+      const PUSH = { duration: 0.5, ease: "power3.inOut" };
+      tl.fromTo("#pt-slide", { x: 1920 }, { x: 0, ...PUSH }, 0);
+      // 1.0-5.0 (19.0-23.0)  pointer held: the screen dims around the cursor, which follows the phone
+      const rig = ["#pt-spot", "#pt-cursor-rig"];
+      gsap.set(rig, { x: 900, y: 610 });
+      tl.fromTo("#pt-dim", { opacity: 0 }, { opacity: 1, duration: 0.15, ease: "power2.out" }, 1.0);
+      tl.fromTo("#pt-cursor", { opacity: 0 }, { opacity: 1, duration: 0.15 }, 0.85);
+      tl.to(rig, { x: 420, y: 316, duration: 0.9, ease: "sine.inOut" }, 1.25);
+      tl.to(rig, { x: 610, y: 474, duration: 1.0, ease: "sine.inOut" }, 2.15);
+      tl.to(rig, { x: 520, y: 634, duration: 0.9, ease: "sine.inOut" }, 3.15);
+      tl.to(rig, { x: 330, y: 792, duration: 0.7, ease: "sine.inOut" }, 4.05);
+      window.__timelines["pointer"] = tl;
+    })();
+  </script>
+</template>

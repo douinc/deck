@@ -1,0 +1,30 @@
+<template>
+  <style>
+    @font-face { font-family: "SF Pro Rounded"; font-weight: 500; src: local("SFProRounded-Medium"), local("SF Pro Rounded Medium"); }
+    @font-face { font-family: "SF Pro Rounded"; font-weight: 700; src: local("SFProRounded-Bold"), local("SF Pro Rounded Bold"); }
+    #root { position: absolute; inset: 0; overflow: hidden; }
+    .cl-slide { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; font-family: var(--font-display), "SF Pro Rounded", "Nunito", sans-serif; }
+    .cl-h { position: absolute; left: 120px; font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; }
+    .cl-sub { position: absolute; left: 124px; font-weight: 500; letter-spacing: -0.005em; white-space: nowrap; }
+    .cl-w { display: inline-block; }
+    #cl-slide { background: var(--color-blue); color: #fff; }
+    #cl-title { top: 310px; font-size: 200px; line-height: 216px; }
+  </style>
+  <div id="root" data-composition-id="claim" data-width="1920" data-height="1080">
+    <div class="cl-slide" id="cl-slide">
+      <div class="cl-h" id="cl-title"><span class="cl-w">No</span> <span class="cl-w">dongles,</span><br /><span class="cl-w">no</span> <span class="cl-w">BS.</span></div>
+    </div>
+  </div>
+  <script>
+    (() => {
+      const tl = gsap.timeline({ paused: true });
+      const PUSH = { duration: 0.5, ease: "power3.inOut" };
+      // The spotlight opens into this slide from where the cursor stopped (330, 792)
+      tl.fromTo("#cl-slide", { clipPath: "circle(140px at 330px 792px)" }, { clipPath: "circle(2000px at 330px 792px)", duration: 0.5, ease: "power3.in" }, 0);
+      tl.fromTo("#cl-title .cl-w", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power2.out", stagger: 0.09 }, 0.45);
+      // 3.0 (26.0)  last tap -> push
+      tl.to("#cl-slide", { x: -1920, ...PUSH }, 3.0);
+      window.__timelines["claim"] = tl;
+    })();
+  </script>
+</template>
