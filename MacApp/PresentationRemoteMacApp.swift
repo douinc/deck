@@ -40,7 +40,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             .dropFirst() // Skip initial value
             .receive(on: DispatchQueue.main)
             .sink { [weak self] showWelcome in
-                if !showWelcome {
+                if showWelcome {
+                    self?.showWelcomeWindow()
+                } else {
                     self?.closeWelcomeWindow()
                 }
             }
@@ -53,16 +55,24 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     private func showWelcomeWindow() {
+        // Already open (e.g. "Setup Guide…" clicked twice): just bring it forward
+        if let existing = welcomeWindow {
+            NSApp.setActivationPolicy(.regular)
+            NSApp.activate(ignoringOtherApps: true)
+            existing.makeKeyAndOrderFront(nil)
+            return
+        }
+
         // Create the welcome window
         let welcomeView = WelcomeView(viewModel: AppCoordinator.shared.welcomeViewModel)
         let hostingController = NSHostingController(rootView: welcomeView)
 
         let window = NSWindow(contentViewController: hostingController)
-        window.title = "Welcome to Deck"
+        window.title = "Deck Setup"
         window.styleMask = [.titled, .closable, .fullSizeContentView]
         window.titlebarAppearsTransparent = true
         window.isMovableByWindowBackground = true
-        window.setContentSize(NSSize(width: 520, height: 560))
+        window.setContentSize(NSSize(width: 560, height: 620))
         window.center()
         window.delegate = self // Handle manual close
 
@@ -88,8 +98,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             return
         }
 
-        // User manually closed the window - mark onboarding as incomplete but still revert to accessory
+        // User manually closed the window - onboarding stays incomplete but revert to accessory
         welcomeWindow = nil
+        if AppCoordinator.shared.showWelcome {
+            AppCoordinator.shared.showWelcome = false
+        }
 
         // Revert to accessory mode (no dock icon)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -120,7 +133,7 @@ struct SettingsView: View {
                     VStack(alignment: .leading) {
                         Text("Deck")
                             .font(.headline)
-                        Text("Control presentations from your iPhone")
+                        Text("Change slides from your iPhone or Apple Watch")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                         if let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String {
@@ -139,15 +152,15 @@ struct SettingsView: View {
 
             Section("Permissions") {
                 HStack {
-                    Text("Accessibility Permission")
+                    Text("Allow Deck to change slides")
                     Spacer()
                     if PermissionService.shared.hasAccessibilityPermission {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundColor(.green)
-                        Text("Granted")
+                        Text("Allowed")
                             .foregroundColor(.secondary)
                     } else {
-                        Button("Grant Permission") {
+                        Button("Allow…") {
                             PermissionService.shared.requestPermission()
                         }
                     }
@@ -156,6 +169,10 @@ struct SettingsView: View {
 
             Section("Advanced") {
                 Toggle("Show Debug Menu", isOn: $preferences.debugMenuEnabled)
+
+                Button("Show Setup Guide") {
+                    AppCoordinator.shared.showSetupGuide()
+                }
 
                 Button("Reset Onboarding") {
                     showResetConfirmation = true

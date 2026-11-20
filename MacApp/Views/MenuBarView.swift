@@ -9,54 +9,55 @@ struct MenuBarView: View {
 
     var body: some View {
         Group {
-            // Status message
-            Text(viewModel.statusText)
-
-            // Connected devices
-            if !viewModel.connectedDeviceNames.isEmpty {
-                ForEach(viewModel.connectedDeviceNames, id: \.self) { deviceName in
-                    Label(deviceName, systemImage: "iphone")
+            // 1. Problems first, each with a one-click fix
+            if viewModel.localNetworkDenied {
+                Text("⚠️ Your iPhone can't find this Mac")
+                Button("Fix: Allow Deck on the Local Network…") {
+                    viewModel.openLocalNetworkSettings()
                 }
+                Divider()
             }
 
-            // Last command
-            if let lastCommand = viewModel.lastCommandText {
-                Text("Last: \(lastCommand)")
+            if !viewModel.hasAccessibilityPermission {
+                Text("⚠️ Deck can't change slides yet")
+                Button("Fix: Allow Deck in System Settings…") {
+                    viewModel.requestPermissions()
+                }
+                Divider()
+            }
+
+            // 2. Where things stand, in plain words
+            if viewModel.isConnected {
+                ForEach(viewModel.connectedDeviceNames, id: \.self) { deviceName in
+                    Text("✅ Connected to \(deviceName)")
+                }
+                if let lastCommand = viewModel.lastCommandText {
+                    Text("Last: \(lastCommand)")
+                } else {
+                    Text("Tap Next on your iPhone to change slides")
+                }
+            } else if viewModel.isListening {
+                Text("📱 Waiting for your iPhone…")
+                Text("Open Deck on your iPhone and tap “\(viewModel.macDisplayName)”")
+            } else {
+                Text("⏸ Deck is paused")
+                Text("Your iPhone can't connect while paused")
             }
 
             Divider()
 
-            // Start/Stop listening toggle
             if viewModel.isListening {
-                Button("Stop Listening") {
+                Button("Pause Deck") {
                     viewModel.stopListening()
                 }
             } else {
-                Button("Start Listening") {
+                Button("Resume Deck") {
                     viewModel.startListening()
                 }
             }
 
-            Divider()
-
-            // Local Network permission (macOS 15+). Without it the iPhone can't
-            // discover this Mac at all, so surface it prominently.
-            if viewModel.localNetworkDenied {
-                Button("⚠️ Allow Local Network Access…") {
-                    viewModel.openLocalNetworkSettings()
-                }
-                Text("Required for your iPhone to find this Mac")
-
-                Divider()
-            }
-
-            // Accessibility permission status
-            if viewModel.hasAccessibilityPermission {
-                Label("Accessibility OK", systemImage: "checkmark.circle")
-            } else {
-                Button("Grant Accessibility") {
-                    viewModel.requestPermissions()
-                }
+            Button("Setup Guide…") {
+                AppCoordinator.shared.showSetupGuide()
             }
 
             Divider()
@@ -116,7 +117,7 @@ struct MenuBarView: View {
             .keyboardShortcut(",")
 
             // Quit
-            Button("Quit") {
+            Button("Quit Deck") {
                 viewModel.quit()
             }
             .keyboardShortcut("q")
