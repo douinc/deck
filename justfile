@@ -187,7 +187,8 @@ upload-ios:
     xcodebuild -exportArchive \
         -archivePath ./build/Deck.xcarchive \
         -exportPath ./build/export \
-        -exportOptionsPlist ExportOptions.plist
+        -exportOptionsPlist ExportOptions.plist \
+        -allowProvisioningUpdates
 
 # Archive and upload iOS app to App Store Connect
 release-ios: archive-ios upload-ios
