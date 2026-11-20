@@ -107,6 +107,9 @@ final class MenuBarViewModel: ObservableObject {
         connectionManager.onCommandReceived = { [weak self] command in
             self?.keystrokeService.sendCommand(command)
         }
+        connectionManager.onPointerReceived = { message in
+            PointerService.shared.handle(message)
+        }
     }
 
     private static func friendlyName(_ command: RemoteCommand) -> String {

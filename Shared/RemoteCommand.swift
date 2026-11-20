@@ -26,6 +26,39 @@ enum RemoteCommand: String, Codable {
     }
 }
 
+// MARK: - Pointer messages sent from iPhone to Mac
+// Sent over the same MCSession data channel as RemoteCommand, as "ptr:"-prefixed
+// strings. Older Mac builds fail to decode them as a RemoteCommand and drop them,
+// so a new iPhone build stays compatible with an old Mac (minus the pointer).
+enum PointerMessage: Equatable {
+    case move(dx: Double, dy: Double)   // Relative cursor motion in points (y grows downward)
+    case click                          // Left click at the current cursor position
+
+    private static let prefix = "ptr:"
+
+    var wireString: String {
+        switch self {
+        case .move(let dx, let dy):
+            return String(format: "\(Self.prefix)m:%.1f,%.1f", dx, dy)
+        case .click:
+            return "\(Self.prefix)click"
+        }
+    }
+
+    init?(wireString: String) {
+        guard wireString.hasPrefix(Self.prefix) else { return nil }
+        let body = wireString.dropFirst(Self.prefix.count)
+        if body == "click" {
+            self = .click
+            return
+        }
+        guard body.hasPrefix("m:") else { return nil }
+        let parts = body.dropFirst(2).split(separator: ",")
+        guard parts.count == 2, let dx = Double(parts[0]), let dy = Double(parts[1]) else { return nil }
+        self = .move(dx: dx, dy: dy)
+    }
+}
+
 // MARK: - Service Configuration
 struct RemoteServiceConfig {
     static let serviceType = "clickerremote"  // Must be 1-15 chars, lowercase, no spaces
