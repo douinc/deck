@@ -61,6 +61,7 @@ class MacConnectionManager: NSObject, ObservableObject {
 
     // MARK: - Callback for keystroke
     var onCommandReceived: ((RemoteCommand) -> Void)?
+    var onPointerReceived: ((PointerMessage) -> Void)?
     
     // MARK: - Debug Logging
     private func debugLog(_ message: String, level: DebugLogEntry.LogLevel = .info) {
@@ -294,9 +295,22 @@ extension MacConnectionManager: MCSessionDelegate {
     }
     
     func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
-        // Decode the command
-        guard let commandString = String(data: data, encoding: .utf8),
-              let command = RemoteCommand(rawValue: commandString) else {
+        guard let commandString = String(data: data, encoding: .utf8) else {
+            print("⚠️ Failed to decode command")
+            return
+        }
+
+        // Pointer messages arrive at up to 60Hz while the pointer button is
+        // held, so they skip the per-command logging below.
+        if let pointer = PointerMessage(wireString: commandString) {
+            DispatchQueue.main.async {
+                self.lastReceivedTime = Date()
+                self.onPointerReceived?(pointer)
+            }
+            return
+        }
+
+        guard let command = RemoteCommand(rawValue: commandString) else {
             print("⚠️ Failed to decode command")
             return
         }

@@ -3,9 +3,9 @@
 ## Project Overview
 
 This is a SwiftUI-based presentation remote system with three apps:
-- Mac App (`Deck` v1.13): Menu bar app that receives commands and sends keystrokes to presentation software
-- iPhone App (`Deck` v1.13): Remote control with vertical slide navigation and presentation timer
-- Apple Watch App (`DeckWatch` v1.13): Companion watch app with gesture-based slide control using double tap motion for next slide
+- Mac App (`Deck` v2.0.0): Menu bar app that receives commands and sends keystrokes to presentation software
+- iPhone App (`Deck` v2.0.0): Remote control with vertical slide navigation and presentation timer
+- Apple Watch App (`DeckWatch` v2.0.0): Companion watch app with gesture-based slide control using double tap motion for next slide
 
 ## Tech Stack
 
@@ -64,7 +64,7 @@ The notarized DMG is created at `./build/Deck-{version}.dmg`.
 Create GitHub release and update Homebrew tap:
 ```bash
 # Create the release (the asset MUST be named Deck-{version}.dmg to match the cask URL)
-gh release create v1.13 ./build/Deck-1.13.dmg --title 'Deck v1.13' --notes 'Release notes'
+gh release create v2.0.0 ./build/Deck-2.0.0.dmg --title 'Deck v2.0.0' --notes 'Release notes'
 
 # Refresh the deck cask in the shared douinc tap (auto-calculates SHA256)
 just update-tap

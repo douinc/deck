@@ -119,6 +119,16 @@ struct ContentView: View {
     @ObservedObject var connectionManager: iPhoneConnectionManager
     @ObservedObject var timer: PresentationTimer
 
+    /// Debug builds can launch straight into the remote without a Mac
+    /// (`-previewRemote`), for layout work in the simulator.
+    private static var previewRemote: Bool {
+        #if DEBUG
+        ProcessInfo.processInfo.arguments.contains("-previewRemote")
+        #else
+        false
+        #endif
+    }
+
     var body: some View {
         ZStack {
             // Background gradient
@@ -129,8 +139,8 @@ struct ContentView: View {
             )
             .ignoresSafeArea()
 
-            if connectionManager.isConnected {
-                RemoteControlView(connectionManager: connectionManager, timer: timer)
+            if connectionManager.isConnected || Self.previewRemote {
+                ArcRemoteView(connectionManager: connectionManager, timer: timer)
             } else {
                 ConnectionView(connectionManager: connectionManager)
             }
@@ -609,9 +619,13 @@ struct RemoteTipsOverlay: View {
                 HintRow(icon: "play.rectangle", tint: .white,
                         text: "On your Mac, start your slideshow and click on it once so it's in front.")
                 HintRow(icon: "chevron.right", tint: .white,
-                        text: "Tap the **big bottom button** for the next slide.")
+                        text: "Tap the **big white button** for the next slide.")
                 HintRow(icon: "chevron.left", tint: .white,
-                        text: "Tap the **top button** to go back.")
+                        text: "Tap the **arrow below it** to go back.")
+                HintRow(icon: "cursorarrow.motionlines", tint: .white,
+                        text: "**Hold** the pointer button and aim your iPhone to move the Mac's cursor. Tap it to click.")
+                HintRow(icon: "hand.draw", tint: .white,
+                        text: "**Touch and hold** any other button to rearrange the layout to fit your thumb.")
                 HintRow(icon: "timer", tint: .white,
                         text: "Press **▶︎** on the timer to track your talk. Your iPhone will gently buzz to keep you on time.")
                 HintRow(icon: "applewatch", tint: .white,
@@ -628,83 +642,13 @@ struct RemoteTipsOverlay: View {
     }
 }
 
-// MARK: - Remote Control View (Vertical Layout)
-struct RemoteControlView: View {
-    @ObservedObject var connectionManager: iPhoneConnectionManager
-    @ObservedObject var timer: PresentationTimer
-    @State private var showDisconnectConfirm = false
-    @State private var showTimerSettings = false
-    @AppStorage("hasSeenRemoteTips") private var hasSeenRemoteTips = false
-
-    var body: some View {
-        GeometryReader { geometry in
-            VStack(spacing: 0) {
-                // Status Bar
-                StatusBarView(
-                    macName: connectionManager.connectedMac?.displayName ?? "Connected",
-                    onDisconnect: { showDisconnectConfirm = true }
-                )
-
-                // Main Control Area - Vertical Buttons (Golden Ratio: Next is φ times larger than Previous)
-                GeometryReader { buttonGeometry in
-                    let spacing: CGFloat = 10
-                    let totalHeight = buttonGeometry.size.height - spacing
-                    let phi: CGFloat = 1.618 // Golden ratio
-                    let previousHeight = totalHeight / (1 + phi)  // ~38.2%
-                    let nextHeight = totalHeight - previousHeight  // ~61.8%
-
-                    VStack(spacing: spacing) {
-                        // Previous Button (Top - Smaller)
-                        SlideButton(
-                            direction: .previous,
-                            action: { connectionManager.previousSlide() }
-                        )
-                        .frame(height: previousHeight)
-
-                        // Next Button (Bottom - Larger)
-                        SlideButton(
-                            direction: .next,
-                            action: { connectionManager.nextSlide() }
-                        )
-                        .frame(height: nextHeight)
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
-
-                // Timer Section
-                TimerView(timer: timer, showSettings: $showTimerSettings)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
-            }
-        }
-        .overlay {
-            if !hasSeenRemoteTips {
-                RemoteTipsOverlay {
-                    withAnimation { hasSeenRemoteTips = true }
-                }
-            }
-        }
-        .alert("Disconnect?", isPresented: $showDisconnectConfirm) {
-            Button("Cancel", role: .cancel) { }
-            Button("Disconnect", role: .destructive) {
-                timer.pause()
-                connectionManager.disconnect()
-            }
-        } message: {
-            Text("Your iPhone will stop controlling \(connectionManager.connectedMac?.displayName ?? "this Mac"). You can reconnect anytime.")
-        }
-        .sheet(isPresented: $showTimerSettings) {
-            TimerSettingsView(timer: timer)
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-        }
-        .onAppear {
-            UIApplication.shared.isIdleTimerDisabled = true
-        }
-        .onDisappear {
-            UIApplication.shared.isIdleTimerDisabled = false
-        }
+// MARK: - Glass Button Style
+struct GlassButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .opacity(configuration.isPressed ? 0.7 : 1.0)
+            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
     }
 }
 
@@ -735,175 +679,62 @@ struct StatusBarView: View {
     }
 }
 
-// MARK: - Slide Button
-enum SlideDirection {
-    case previous, next
-
-    var icon: String {
-        switch self {
-        case .previous: return "chevron.left"
-        case .next: return "chevron.right"
-        }
-    }
-
-    var label: String {
-        switch self {
-        case .previous: return "Previous"
-        case .next: return "Next"
-        }
-    }
-}
-
-struct SlideButton: View {
-    let direction: SlideDirection
-    let action: () -> Void
-
-    @State private var isPressed = false
-
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 12) {
-                Image(systemName: direction.icon)
-                    .font(.system(size: 56, weight: .ultraLight))
-                Text(direction.label)
-                    .font(.title3.weight(.medium))
-            }
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(.ultraThinMaterial)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 24)
-                            .strokeBorder(.white.opacity(0.1), lineWidth: 1)
-                    )
-            )
-        }
-        .buttonStyle(GlassButtonStyle())
-    }
-}
-
-// MARK: - Glass Button Style
-struct GlassButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .opacity(configuration.isPressed ? 0.7 : 1.0)
-            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
-            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
-    }
-}
-
-// MARK: - Timer View
-struct TimerView: View {
+// MARK: - Remote Settings View
+struct RemoteSettingsView: View {
     @ObservedObject var timer: PresentationTimer
-    @Binding var showSettings: Bool
-
-    var body: some View {
-        VStack(spacing: 16) {
-            // Progress Bar
-            if let progress = timer.progress {
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        Capsule()
-                            .fill(.white.opacity(0.1))
-                        Capsule()
-                            .fill(progressColor(progress))
-                            .frame(width: geo.size.width * progress)
-                    }
-                }
-                .frame(height: 4)
-            }
-
-            // Time Display
-            HStack(alignment: .center) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(timer.formattedTime)
-                        .font(.system(size: 40, weight: .light, design: .monospaced))
-                        .foregroundStyle(timerColor)
-
-                    if let remaining = timer.formattedRemainingTime {
-                        Text(remaining + " remaining")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                Spacer()
-
-                // Controls
-                HStack(spacing: 12) {
-                    // Reset
-                    Button {
-                        timer.reset()
-                    } label: {
-                        Image(systemName: "arrow.counterclockwise")
-                            .font(.body.weight(.medium))
-                            .foregroundStyle(.secondary)
-                            .frame(width: 44, height: 44)
-                            .background(.ultraThinMaterial, in: Circle())
-                    }
-                    .buttonStyle(.plain)
-
-                    // Play/Pause
-                    Button {
-                        timer.toggle()
-                    } label: {
-                        Image(systemName: timer.isRunning ? "pause.fill" : "play.fill")
-                            .font(.body.weight(.semibold))
-                            .foregroundStyle(.white)
-                            .frame(width: 52, height: 52)
-                            .background(timer.isRunning ? Color.orange : Color.green, in: Circle())
-                    }
-                    .buttonStyle(.plain)
-
-                    // Settings
-                    Button {
-                        showSettings = true
-                    } label: {
-                        Image(systemName: "gearshape")
-                            .font(.body.weight(.medium))
-                            .foregroundStyle(.secondary)
-                            .frame(width: 44, height: 44)
-                            .background(.ultraThinMaterial, in: Circle())
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
-        .padding(20)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
-    }
-
-    private var timerColor: Color {
-        if let total = timer.config.totalDuration {
-            if timer.elapsedTime >= total {
-                return .red
-            } else if timer.elapsedTime >= total * 0.9 {
-                return .orange
-            }
-        }
-        return .white
-    }
-
-    private func progressColor(_ progress: Double) -> Color {
-        if progress >= 1.0 { return .red }
-        if progress >= 0.9 { return .orange }
-        if progress >= 0.75 { return .yellow }
-        return .green
-    }
-}
-
-// MARK: - Timer Settings View
-struct TimerSettingsView: View {
-    @ObservedObject var timer: PresentationTimer
+    @AppStorage(Handedness.storageKey) private var hand: Handedness = .right
+    @AppStorage(PointerController.sensitivityKey) private var pointerSensitivity = 1.0
+    @AppStorage(PointerController.spotlightKey) private var pointerSpotlight = false
+    @AppStorage(ArcRemoteView.nextClicksKey) private var nextClicks = false
     @Environment(\.dismiss) var dismiss
 
     var body: some View {
         NavigationView {
             List {
+                // Handedness
+                Section {
+                    Picker("Holding Hand", selection: $hand) {
+                        ForEach(Handedness.allCases) { hand in
+                            Text(hand.label).tag(hand)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                } header: {
+                    Text("Holding Hand")
+                } footer: {
+                    Text("Controls arc around the thumb of the hand holding the phone")
+                }
+
+                // Next button behavior
+                Section {
+                    Toggle("Next Button Left-Clicks", isOn: $nextClicks)
+                } header: {
+                    Text("Next Button")
+                } footer: {
+                    Text("Sends a left click at the Mac's cursor instead of the right arrow key. Use it for slides or apps that advance on click.")
+                }
+
+                // Pointer
+                Section {
+                    Toggle("Spotlight", isOn: $pointerSpotlight)
+                    Slider(value: $pointerSensitivity, in: 0.4...2.5) {
+                        Text("Pointer Speed")
+                    } minimumValueLabel: {
+                        Image(systemName: "tortoise")
+                    } maximumValueLabel: {
+                        Image(systemName: "hare")
+                    }
+                } header: {
+                    Text("Pointer")
+                } footer: {
+                    Text("Hold the pointer button and aim the phone to move the Mac cursor. Tap it to click. Spotlight dims the Mac's screen around the cursor while you hold.")
+                }
+
                 // Vibration Toggle
                 Section {
                     Toggle("Haptic Alerts", isOn: $timer.config.isEnabled)
+                } header: {
+                    Text("Timer")
                 } footer: {
                     Text("Receive haptic feedback at intervals during your presentation")
                 }
@@ -959,7 +790,7 @@ struct TimerSettingsView: View {
                     }
                 }
             }
-            .navigationTitle("Timer")
+            .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {

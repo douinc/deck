@@ -1,0 +1,45 @@
+<template>
+  <style>
+    @font-face { font-family: "SF Pro Rounded"; font-weight: 500; src: local("SFProRounded-Medium"), local("SF Pro Rounded Medium"); }
+    @font-face { font-family: "SF Pro Rounded"; font-weight: 700; src: local("SFProRounded-Bold"), local("SF Pro Rounded Bold"); }
+    #root { position: absolute; inset: 0; overflow: hidden; }
+    .ec-slide { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; font-family: var(--font-display), "SF Pro Rounded", "Nunito", sans-serif; }
+    .ec-h { position: absolute; left: 120px; font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; }
+    .ec-sub { position: absolute; left: 124px; font-weight: 500; letter-spacing: -0.005em; white-space: nowrap; }
+    .ec-w { display: inline-block; }
+    @font-face { font-family: "SF Pro Rounded"; font-weight: 600; src: local("SFProRounded-Semibold"), local("SF Pro Rounded Semibold"); }
+    #ec-ground { background: var(--color-ink); }
+    #ec-blob { position: absolute; left: -52px; top: -52px; width: 104px; height: 104px; border-radius: 50%; background: #f1f1f1; }
+    #ec-logo { position: absolute; left: 520px; top: 196px; width: 380px; height: 380px; }
+    #ec-word { position: absolute; left: 926px; top: 248px; font-family: var(--font-display), "SF Pro Rounded", "Nunito", sans-serif; font-weight: 700; font-size: 250px; line-height: 276px; letter-spacing: -0.03em; color: #fff; white-space: nowrap; }
+    #ec-cta { position: absolute; left: 0; top: 664px; width: 1920px; display: flex; justify-content: center; }
+    #ec-store { font-family: var(--font-display), "SF Pro Rounded", "Nunito", sans-serif; font-weight: 600; font-size: 44px; line-height: 56px; color: var(--color-ink); background: #fff; border-radius: 26px; padding: 22px 48px; white-space: nowrap; }
+    #ec-brew { position: absolute; left: 0; top: 828px; width: 1920px; text-align: center; font-family: "JetBrains Mono", monospace; font-weight: 500; font-size: 38px; line-height: 50px; color: rgba(255,255,255,0.72); white-space: nowrap; }
+    #ec-brew b { font-weight: 500; color: var(--color-blue); }
+  </style>
+  <div id="root" data-composition-id="endcard" data-width="1920" data-height="1080">
+    <div class="ec-slide" id="ec-ground"></div>
+    <!-- The white Next button, carried over from the phone (home framing: centre 1631,749, 104 px) -->
+    <div id="ec-blob-rig" style="position:absolute;left:0;top:0;width:0;height:0"><div id="ec-blob"></div></div>
+    <img id="ec-logo" src="assets/deck-logo.png" alt="Deck" />
+    <div id="ec-word">Deck</div>
+    <div id="ec-cta"><div id="ec-store">Download on the App Store</div></div>
+    <div id="ec-brew"><b>$</b> brew install --cask deck</div>
+  </div>
+  <script>
+    (() => {
+      const tl = gsap.timeline({ paused: true });
+      const PUSH = { duration: 0.5, ease: "power3.inOut" };
+      tl.fromTo("#ec-ground", { x: 1920 }, { x: 0, ...PUSH }, 0);
+      // The button travels to where the mark will stand, then opens into it
+      tl.fromTo("#ec-blob-rig", { x: 1631, y: 749 }, { x: 710, y: 386, duration: 0.55, ease: "power3.inOut" }, 0);
+      tl.fromTo("#ec-blob", { scale: 0.92 }, { scale: 1.5, duration: 0.55, ease: "power3.inOut" }, 0);
+      tl.fromTo("#ec-logo", { clipPath: "circle(0px at 190px 190px)" }, { clipPath: "circle(290px at 190px 190px)", duration: 0.45, ease: "power3.out" }, 0.5);
+      tl.to("#ec-blob", { opacity: 0, scale: 2.4, duration: 0.3, ease: "power2.out" }, 0.56);
+      tl.fromTo("#ec-word", { clipPath: "inset(0px 100% 0px 0px)" }, { clipPath: "inset(0px 0% 0px 0px)", duration: 0.4, ease: "power3.out" }, 0.8);
+      tl.fromTo("#ec-store", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power2.out" }, 1.3);
+      tl.fromTo("#ec-brew", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power2.out" }, 1.5);
+      window.__timelines["endcard"] = tl;
+    })();
+  </script>
+</template>

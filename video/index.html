@@ -1,0 +1,108 @@
+<!doctype html>
+<html
+  lang="en"
+  data-composition-variables='[
+    {"id":"color-blue","type":"color","label":"Deck blue","default":"#2D6EEF"},
+    {"id":"color-ink","type":"color","label":"Ink ground","default":"#05070D"},
+    {"id":"color-paper","type":"color","label":"Paper ground","default":"#F6FBFF"},
+    {"id":"font-display","type":"string","label":"Display font","default":"SF Pro Rounded"}
+  ]'
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <style>
+      :root {
+        --color-blue: #2d6eef;
+        --color-ink: #05070d;
+        --color-paper: #f6fbff;
+        --font-display: "SF Pro Rounded";
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: var(--color-ink);
+      }
+      #root {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+      }
+      /* slides sit under the devices; the end card sits over them so the Next button can leave the phone */
+      .slide-host {
+        z-index: 1;
+      }
+      #claim {
+        z-index: 2;
+      }
+      #remote {
+        z-index: 5;
+      }
+      #endcard {
+        z-index: 6;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Deck launch film, 30 s. Every slide change is caused by a Deck input in the "remote" scene.
+         Slides overlap their neighbour by 0.5 s for the push, so they alternate between two lanes. -->
+    <div id="root" data-composition-id="main" data-start="0" data-duration="30" data-width="1920" data-height="1080">
+      <div id="hook" class="clip slide-host" data-composition-id="hook" data-composition-src="compositions/hook.html"
+        data-start="0" data-duration="3.5" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="tension" class="clip slide-host" data-composition-id="tension" data-composition-src="compositions/tension.html"
+        data-start="3" data-duration="4" data-track-index="2" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="reveal" class="clip slide-host" data-composition-id="reveal" data-composition-src="compositions/reveal.html"
+        data-start="6.5" data-duration="3" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="doubletap" class="clip slide-host" data-composition-id="doubletap" data-composition-src="compositions/doubletap.html"
+        data-start="9" data-duration="3" data-track-index="2" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="flick" class="clip slide-host" data-composition-id="flick" data-composition-src="compositions/flick.html"
+        data-start="11.5" data-duration="4.5" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="timer" class="clip slide-host" data-composition-id="timer" data-composition-src="compositions/timer.html"
+        data-start="15.5" data-duration="3" data-track-index="2" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="pointer" class="clip slide-host" data-composition-id="pointer" data-composition-src="compositions/pointer.html"
+        data-start="18" data-duration="5.5" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="claim" class="clip slide-host" data-composition-id="claim" data-composition-src="compositions/claim.html"
+        data-start="23" data-duration="3.5" data-track-index="2" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="endcard" class="clip" data-composition-id="endcard" data-composition-src="compositions/endcard.html"
+        data-start="26" data-duration="4" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+
+      <!-- iPhone + Apple Watch, the inputs -->
+      <div id="remote" class="clip" data-composition-id="remote" data-composition-src="compositions/remote.html"
+        data-start="0" data-duration="26.6" data-track-index="3" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+
+      <!-- Sound: one click per input, one whoosh per slide change (two takes rotated). No music bed yet. -->
+      <audio id="sfx-click-1" class="clip" src="assets/sfx/click.mp3" data-start="0.97" data-duration="0.36" data-track-index="4" data-volume="0.8"></audio>
+      <audio id="sfx-whoosh-1" class="clip" src="assets/sfx/whoosh-short.mp3" data-start="1.0" data-duration="0.57" data-track-index="5" data-volume="0.45"></audio>
+      <audio id="sfx-click-2" class="clip" src="assets/sfx/click.mp3" data-start="2.97" data-duration="0.36" data-track-index="4" data-volume="0.8"></audio>
+      <audio id="sfx-whoosh-2" class="clip" src="assets/sfx/whoosh.mp3" data-start="3.0" data-duration="0.57" data-track-index="5" data-volume="0.4"></audio>
+      <audio id="sfx-click-3" class="clip" src="assets/sfx/click.mp3" data-start="6.47" data-duration="0.36" data-track-index="4" data-volume="0.8"></audio>
+      <audio id="sfx-whoosh-3" class="clip" src="assets/sfx/whoosh-short.mp3" data-start="6.5" data-duration="0.57" data-track-index="5" data-volume="0.45"></audio>
+      <audio id="sfx-click-4a" class="clip" src="assets/sfx/click-soft.mp3" data-start="8.75" data-duration="0.36" data-track-index="4" data-volume="0.9"></audio>
+      <audio id="sfx-click-4b" class="clip" src="assets/sfx/click-soft.mp3" data-start="8.97" data-duration="0.36" data-track-index="6" data-volume="0.9"></audio>
+      <audio id="sfx-whoosh-4" class="clip" src="assets/sfx/whoosh.mp3" data-start="9.0" data-duration="0.57" data-track-index="5" data-volume="0.4"></audio>
+      <audio id="sfx-whoosh-5" class="clip" src="assets/sfx/whoosh-short.mp3" data-start="11.42" data-duration="0.57" data-track-index="5" data-volume="0.5"></audio>
+      <audio id="sfx-click-6" class="clip" src="assets/sfx/click.mp3" data-start="15.47" data-duration="0.36" data-track-index="4" data-volume="0.8"></audio>
+      <audio id="sfx-whoosh-6" class="clip" src="assets/sfx/whoosh.mp3" data-start="15.5" data-duration="0.57" data-track-index="5" data-volume="0.4"></audio>
+      <audio id="sfx-click-7" class="clip" src="assets/sfx/click.mp3" data-start="17.97" data-duration="0.36" data-track-index="4" data-volume="0.8"></audio>
+      <audio id="sfx-whoosh-7" class="clip" src="assets/sfx/whoosh-short.mp3" data-start="18.0" data-duration="0.57" data-track-index="5" data-volume="0.45"></audio>
+      <audio id="sfx-click-8" class="clip" src="assets/sfx/click-soft.mp3" data-start="18.97" data-duration="0.36" data-track-index="4" data-volume="0.9"></audio>
+      <audio id="sfx-whoosh-8" class="clip" src="assets/sfx/whoosh.mp3" data-start="23.0" data-duration="0.57" data-track-index="5" data-volume="0.45"></audio>
+      <audio id="sfx-click-9" class="clip" src="assets/sfx/click.mp3" data-start="25.97" data-duration="0.36" data-track-index="4" data-volume="0.8"></audio>
+      <audio id="sfx-pop-end" class="clip" src="assets/sfx/pop.mp3" data-start="26.55" data-duration="0.72" data-track-index="5" data-volume="0.6"></audio>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = gsap.timeline({ paused: true });
+    </script>
+  </body>
+</html>

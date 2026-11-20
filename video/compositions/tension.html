@@ -1,0 +1,39 @@
+<template>
+  <style>
+    @font-face { font-family: "SF Pro Rounded"; font-weight: 500; src: local("SFProRounded-Medium"), local("SF Pro Rounded Medium"); }
+    @font-face { font-family: "SF Pro Rounded"; font-weight: 700; src: local("SFProRounded-Bold"), local("SF Pro Rounded Bold"); }
+    #root { position: absolute; inset: 0; overflow: hidden; }
+    .tn-slide { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; font-family: var(--font-display), "SF Pro Rounded", "Nunito", sans-serif; }
+    .tn-h { position: absolute; left: 120px; font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; }
+    .tn-sub { position: absolute; left: 124px; font-weight: 500; letter-spacing: -0.005em; white-space: nowrap; }
+    .tn-w { display: inline-block; }
+    #tn-slide { background: var(--color-paper); color: var(--color-ink); }
+    .tn-line { font-size: 124px; line-height: 150px; }
+    #tn-l1 { top: 262px; } #tn-l2 { top: 412px; } #tn-l3 { top: 562px; }
+    /* the strike: the same bar floods the next slide */
+    #tn-strike { position: absolute; left: 120px; top: 634px; width: 1130px; height: 18px; background: var(--color-blue); }
+  </style>
+  <div id="root" data-composition-id="tension" data-width="1920" data-height="1080">
+    <div class="tn-slide" id="tn-slide">
+      <div class="tn-h tn-line" id="tn-l1"><span class="tn-w">$1000</span> <span class="tn-w">iPhone</span></div>
+      <div class="tn-h tn-line" id="tn-l2"><span class="tn-w">$2000</span> <span class="tn-w">Mac</span></div>
+      <div class="tn-h tn-line" id="tn-l3"><span class="tn-w">+</span> <span class="tn-w">$30–$100</span> <span class="tn-w">clicker?</span></div>
+      <div id="tn-strike"></div>
+    </div>
+  </div>
+  <script>
+    (() => {
+      const tl = gsap.timeline({ paused: true });
+      const PUSH = { duration: 0.5, ease: "power3.inOut" };
+      const IN = { opacity: 1, filter: "blur(0px)", duration: 0.14, ease: "power2.out", stagger: 0.07 };
+      tl.fromTo("#tn-slide", { x: 1920 }, { x: 0, ...PUSH }, 0);
+      tl.fromTo("#tn-l1 .tn-w", { opacity: 0, filter: "blur(8px)" }, IN, 0.4);
+      tl.fromTo("#tn-l2 .tn-w", { opacity: 0, filter: "blur(8px)" }, IN, 0.9);
+      tl.fromTo("#tn-l3 .tn-w", { opacity: 0, filter: "blur(8px)" }, IN, 1.5);
+      // 2.5  the clicker line is struck
+      tl.fromTo("#tn-strike", { scaleX: 0, transformOrigin: "0 50%" }, { scaleX: 1, duration: 0.3, ease: "power3.out" }, 2.5);
+      tl.to("#tn-l3 .tn-w", { opacity: 0.45, duration: 0.3, ease: "power2.out" }, 2.5);
+      window.__timelines["tension"] = tl;
+    })();
+  </script>
+</template>

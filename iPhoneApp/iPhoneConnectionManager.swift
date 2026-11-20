@@ -494,6 +494,25 @@ class iPhoneConnectionManager: NSObject, ObservableObject {
         }
     }
     
+    /// Sends a pointer message. Moves are high-frequency deltas, so they go
+    /// unreliable (a dropped packet just loses a fraction of cursor travel);
+    /// clicks must arrive.
+    func sendPointer(_ message: PointerMessage) {
+        guard let session = session, !session.connectedPeers.isEmpty else { return }
+        guard let data = message.wireString.data(using: .utf8) else { return }
+
+        let mode: MCSessionSendDataMode
+        if case .move = message { mode = .unreliable } else { mode = .reliable }
+        try? session.send(data, toPeers: session.connectedPeers, with: mode)
+    }
+
+    /// Left click at the Mac's cursor, with the same haptic as a slide command
+    func click() {
+        guard let session = session, !session.connectedPeers.isEmpty else { return }
+        sendPointer(.click)
+        feedbackGenerator.impactOccurred()
+    }
+
     // Convenience methods
     func nextSlide() {
         sendCommand(.nextSlide)

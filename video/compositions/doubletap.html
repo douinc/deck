@@ -1,0 +1,31 @@
+<template>
+  <style>
+    @font-face { font-family: "SF Pro Rounded"; font-weight: 500; src: local("SFProRounded-Medium"), local("SF Pro Rounded Medium"); }
+    @font-face { font-family: "SF Pro Rounded"; font-weight: 700; src: local("SFProRounded-Bold"), local("SF Pro Rounded Bold"); }
+    #root { position: absolute; inset: 0; overflow: hidden; }
+    .dt-slide { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; font-family: var(--font-display), "SF Pro Rounded", "Nunito", sans-serif; }
+    .dt-h { position: absolute; left: 120px; font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; }
+    .dt-sub { position: absolute; left: 124px; font-weight: 500; letter-spacing: -0.005em; white-space: nowrap; }
+    .dt-w { display: inline-block; }
+    #dt-slide { background: var(--color-paper); color: var(--color-ink); }
+    #dt-title { top: 330px; font-size: 200px; line-height: 220px; }
+    #dt-sub { top: 600px; font-size: 60px; line-height: 76px; color: rgba(5,7,13,0.62); }
+  </style>
+  <div id="root" data-composition-id="doubletap" data-width="1920" data-height="1080">
+    <div class="dt-slide" id="dt-slide">
+      <div class="dt-h" id="dt-title">Double Tap</div>
+      <div class="dt-sub" id="dt-sub">Never touch the screen</div>
+    </div>
+  </div>
+  <script>
+    (() => {
+      const tl = gsap.timeline({ paused: true });
+      const PUSH = { duration: 0.5, ease: "power3.inOut" };
+      tl.fromTo("#dt-slide", { x: 1920 }, { x: 0, ...PUSH }, 0);
+      tl.fromTo("#dt-sub", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power2.out" }, 0.75);
+      // 2.5 (11.5)  wrist flick -> the slide is flicked upward
+      tl.to("#dt-slide", { y: -1080, duration: 0.4, ease: "power3.inOut" }, 2.5);
+      window.__timelines["doubletap"] = tl;
+    })();
+  </script>
+</template>

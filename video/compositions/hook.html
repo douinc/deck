@@ -1,0 +1,38 @@
+<template>
+  <style>
+    @font-face { font-family: "SF Pro Rounded"; font-weight: 500; src: local("SFProRounded-Medium"), local("SF Pro Rounded Medium"); }
+    @font-face { font-family: "SF Pro Rounded"; font-weight: 700; src: local("SFProRounded-Bold"), local("SF Pro Rounded Bold"); }
+    #root { position: absolute; inset: 0; overflow: hidden; }
+    .hk-slide { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; font-family: var(--font-display), "SF Pro Rounded", "Nunito", sans-serif; }
+    .hk-h { position: absolute; left: 120px; font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; }
+    .hk-sub { position: absolute; left: 124px; font-weight: 500; letter-spacing: -0.005em; white-space: nowrap; }
+    .hk-w { display: inline-block; }
+    #hk-a { background: var(--color-paper); color: var(--color-ink); }
+    #hk-b { background: var(--color-blue); color: #fff; }
+    #hk-a-title { top: 316px; font-size: 172px; line-height: 190px; }
+    #hk-b-title { top: 346px; font-size: 150px; line-height: 168px; }
+  </style>
+  <div id="root" data-composition-id="hook" data-width="1920" data-height="1080">
+    <!-- Slide A: the old way, said out loud -->
+    <div class="hk-slide" id="hk-a">
+      <div class="hk-h" id="hk-a-title">Next slide,<br />please</div>
+    </div>
+    <!-- Slide B: what the tap just proved -->
+    <div class="hk-slide" id="hk-b">
+      <div class="hk-h" id="hk-b-title">Your iPhone<br />is the remote</div>
+    </div>
+  </div>
+  <script>
+    (() => {
+      const tl = gsap.timeline({ paused: true });
+      const PUSH = { duration: 0.5, ease: "power3.inOut" };
+      gsap.set("#hk-b", { x: 1920 });
+      // 1.0  tap -> push
+      tl.to("#hk-a", { x: -1920, ...PUSH }, 1.0);
+      tl.to("#hk-b", { x: 0, ...PUSH }, 1.0);
+      // 3.0  tap -> push out to the tension slide
+      tl.to("#hk-b", { x: -1920, ...PUSH }, 3.0);
+      window.__timelines["hook"] = tl;
+    })();
+  </script>
+</template>
