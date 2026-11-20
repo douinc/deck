@@ -1,0 +1,181 @@
+/* Deck — App Store screenshot panels. One panel = 1320 × 2868 (iPhone 6.9"). */
+
+@font-face {
+  font-family: "Archivo";
+  src: url("fonts/Archivo.ttf") format("truetype");
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+}
+
+/* Fields are the app's own timer tints (ArcRemoteView.TimerTint), used like stage gels. */
+:root {
+  --mint: #8fedcc;
+  --amber: #ffd17a;
+  --orange: #ff9e5c;
+  --coral: #ff6b66;
+}
+
+html, body { margin: 0; background: #1c1c1e; }
+body { display: flex; flex-wrap: wrap; gap: 60px; padding: 60px; width: max-content; }
+body.single { display: block; padding: 0; background: none; }
+body.single .panel { display: none; }
+body.single .panel.on { display: block; }
+
+.panel {
+  position: relative;
+  flex: none;
+  width: 1320px;
+  height: 2868px;
+  overflow: hidden;
+  background: var(--field);
+  color: var(--ink);
+  font-family: "Archivo", sans-serif;
+  --band: rgba(255, 255, 255, 0.075);
+  --line: rgba(0, 0, 0, 0.3);
+}
+.mint   { --field: var(--mint);   --ink: #000; }
+.amber  { --field: var(--amber);  --ink: #000; }
+.orange { --field: var(--orange); --ink: #000; }
+.coral  { --field: var(--coral);  --ink: #000; }
+.night  { --field: #000; --ink: #fff; --band: rgba(255, 255, 255, 0.032); --line: rgba(255, 255, 255, 0.24); }
+
+.panel > svg.rings { position: absolute; inset: 0; }
+.panel > svg.trace { position: absolute; inset: 0; z-index: 3; }
+
+/* ── Type ─────────────────────────────────────────────────────────────── */
+header { position: absolute; z-index: 2; left: 92px; right: 92px; top: 148px; }
+h1 {
+  margin: 0;
+  font-size: 236px;
+  line-height: 0.9;
+  font-weight: 800;
+  font-stretch: 62%;
+  letter-spacing: -0.012em;
+  word-spacing: 0.09em;
+}
+header p {
+  margin: 46px 0 0;
+  max-width: 1080px;
+  font-size: 57px;
+  line-height: 1.22;
+  font-weight: 500;
+  font-stretch: 96%;
+  letter-spacing: -0.012em;
+  opacity: 0.8;
+  text-wrap: balance;
+}
+
+/* ── iPhone ───────────────────────────────────────────────────────────── */
+.phone {
+  position: absolute;
+  z-index: 1;
+  width: var(--w);
+  height: calc(var(--w) * 2868 / 1320);
+  border-radius: calc(var(--w) * 0.141);
+  background: #000;
+  box-shadow:
+    0 0 0 calc(var(--w) * 0.021) #000,
+    0 0 0 calc(var(--w) * 0.0275) #4a4b50,
+    0 calc(var(--w) * 0.07) calc(var(--w) * 0.14) calc(var(--w) * 0.01) rgba(0, 0, 0, 0.32);
+}
+.phone img { display: block; width: 100%; height: 100%; border-radius: inherit; }
+.phone::after { /* Dynamic Island */
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: calc(var(--w) * 0.032);
+  width: calc(var(--w) * 0.285);
+  height: calc(var(--w) * 0.084);
+  margin-left: calc(var(--w) * -0.1425);
+  border-radius: 999px;
+  background: #000;
+}
+
+/* ── Mac with a slide and the spotlight overlay ───────────────────────── */
+.laptop { position: absolute; z-index: 1; width: var(--sw); }
+.laptop::after { /* base */
+  content: "";
+  display: block;
+  height: 30px;
+  margin: 0 -52px;
+  border-radius: 4px 4px 26px 26px;
+  background: linear-gradient(#6b6c70, #2c2c2f 60%);
+}
+.slide {
+  position: relative;
+  box-sizing: border-box;
+  height: calc(var(--sw) * 0.625);
+  padding: 74px 84px;
+  border: 20px solid #1a1a1c;
+  border-bottom-width: 26px;
+  border-radius: 34px 34px 0 0;
+  background: #fff;
+  color: #000;
+  overflow: hidden;
+}
+.slide h2 { margin: 0 0 50px; word-spacing: 0.09em; font-size: 76px; font-weight: 800; font-stretch: 70%; letter-spacing: -0.01em; }
+.bars { margin: 0; padding: 0; list-style: none; display: grid; gap: 30px; }
+.bars li { display: flex; align-items: center; font-size: 38px; font-weight: 500; }
+.bars b { flex: none; width: 250px; font-weight: 500; }
+.bars i { flex: none; height: 68px; width: calc(var(--v) * 1.25); border-radius: 0 12px 12px 0; background: #d6d6d9; }
+.bars .hot i { background: var(--coral); }
+.bars span { margin-left: 24px; font-weight: 700; white-space: nowrap; }
+/* SpotlightOverlay: 65% dim, hole radius = 13% of display height */
+.dim {
+  position: absolute; inset: 0;
+  --r: calc(var(--sw) * 0.625 * 0.13 + 40px);
+  background: radial-gradient(circle var(--r) at var(--hx) var(--hy), transparent calc(var(--r) - 3px), rgba(0, 0, 0, 0.65) var(--r));
+}
+.slide { --hx: 800px; --hy: 322px; }
+.cursor { position: absolute; left: calc(var(--hx) - 12px); top: calc(var(--hy) - 6px); width: 62px; height: 62px; }
+
+.steps {
+  position: absolute; z-index: 2; left: 92px; top: 2060px;
+  margin: 0; padding: 0; list-style: none;
+  font-size: 116px; line-height: 1.12; font-weight: 800; font-stretch: 62%; word-spacing: 0.09em;
+}
+.steps li:nth-child(2) { opacity: 0.55; }
+
+/* ── Apple Watch ──────────────────────────────────────────────────────── */
+.watch {
+  position: absolute;
+  z-index: 1;
+  width: var(--w);
+  height: calc(var(--w) * 496 / 416);
+  padding: calc(var(--w) * 0.075);
+  margin: calc(var(--w) * -0.075);
+  border-radius: calc(var(--w) * 0.27);
+  background: #000;
+  box-shadow:
+    inset 0 0 0 calc(var(--w) * 0.012) #3a3b3f,
+    0 0 0 calc(var(--w) * 0.012) #5a5b60;
+}
+.watch img { display: block; width: 100%; height: 100%; border-radius: calc(var(--w) * 0.19); }
+.watch::before { /* band */
+  content: "";
+  position: absolute; z-index: -1;
+  left: 13%; right: 13%; top: -58%; bottom: -90%;
+  -webkit-mask-image: linear-gradient(transparent, #000 22%);
+  border-radius: calc(var(--w) * 0.1);
+  background: linear-gradient(90deg, #17171a, #2a2a2e 22%, #2a2a2e 78%, #17171a);
+}
+.watch::after { /* Digital Crown */
+  content: "";
+  position: absolute;
+  right: calc(var(--w) * -0.052);
+  top: 26%;
+  width: calc(var(--w) * 0.05);
+  height: calc(var(--w) * 0.17);
+  border-radius: calc(var(--w) * 0.02);
+  background: repeating-linear-gradient(#7c7d82 0 5px, #4a4b50 5px 10px);
+}
+
+/* ── App icon ─────────────────────────────────────────────────────────── */
+.icon {
+  position: absolute; z-index: 1;
+  width: var(--w); height: var(--w);
+  border-radius: calc(var(--w) * 0.225);
+  background: #fff;
+  box-shadow: 0 calc(var(--w) * 0.08) calc(var(--w) * 0.16) rgba(0, 0, 0, 0.22);
+}
+.icon img { display: block; width: 100%; height: 100%; border-radius: inherit; }

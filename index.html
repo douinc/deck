@@ -1,329 +1,749 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Deck — Liquid Glass Presentation Remote</title>
-    <meta name="description" content="Deck turns your iPhone, Mac, and Apple Watch into a unified presentation remote with a liquid glass aesthetic and secure peer-to-peer control."/>
-    <meta property="og:title" content="Deck"/>
-    <meta property="og:description" content="SwiftUI-powered presentation remote for Mac, iPhone, and Apple Watch."/>
-    <meta property="og:image" content="public/logo/ios-logo.png"/>
-    <link rel="icon" type="image/png" href="public/logo/ios-logo.png"/>
-    <style>
-        :root {
-            --bg: #03060d;
-            --bg-alt: rgba(16, 21, 34, 0.6);
-            --card: rgba(12, 18, 32, 0.65);
-            --accent: #66f0ff;
-            --accent-strong: #3f8cff;
-            --text: #f6fbff;
-            --muted: rgba(246, 251, 255, 0.7);
-            --border: rgba(255, 255, 255, 0.08);
-        }
-        *, *::before, *::after { box-sizing: border-box; }
-        body {
-            margin: 0;
-            font-family: 'SF Pro Display', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            line-height: 1.5;
-            position: relative;
-            overflow-x: hidden;
-        }
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background: radial-gradient(circle at 10% 20%, rgba(102, 240, 255, 0.15), transparent 45%),
-                        radial-gradient(circle at 80% 0%, rgba(63, 140, 255, 0.3), transparent 50%),
-                        radial-gradient(circle at 50% 80%, rgba(147, 87, 255, 0.2), transparent 50%);
-            filter: blur(20px);
-            z-index: -2;
-        }
-        body::after {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image: linear-gradient(120deg, rgba(255, 255, 255, 0.04) 0%, transparent 40%),
-                              linear-gradient(300deg, rgba(255, 255, 255, 0.02) 20%, transparent 70%);
-            mix-blend-mode: screen;
-            z-index: -1;
-        }
-        img { max-width: 100%; display: block; }
-        video { display: block; max-width: 100%; border-radius: 24px; }
-        main { width: min(1200px, 95vw); margin: 0 auto; padding: 32px 0 80px; }
-        nav {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 18px 28px;
-            border-radius: 24px;
-            margin-top: 18px;
-            background: rgba(6, 12, 24, 0.65);
-            backdrop-filter: blur(22px);
-            border: 1px solid var(--border);
-        }
-        .brand { display: flex; align-items: center; gap: 14px; font-weight: 600; letter-spacing: 0.04em; }
-        .brand img { width: 42px; height: 42px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45); }
-        .nav-links { display: flex; gap: 22px; font-size: 0.95rem; color: var(--muted); }
-        .nav-links a { color: inherit; text-decoration: none; position: relative; padding-bottom: 4px; }
-        .nav-links a::after { content: ''; position: absolute; left: 0; bottom: 0; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, var(--accent), transparent); opacity: 0; transition: opacity 0.2s ease; }
-        .nav-links a:hover::after { opacity: 1; }
-        .pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.15); color: var(--muted); font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; }
-        .eyebrow { color: var(--accent); font-size: 0.88rem; letter-spacing: 0.3em; text-transform: uppercase; }
-        .hero { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 40px; align-items: center; margin: 70px 0; }
-        .hero h1 { font-size: clamp(2.5rem, 5vw, 3.5rem); margin: 18px 0; line-height: 1.1; }
-        .hero p { color: var(--muted); font-size: 1.1rem; margin-bottom: 28px; }
-        .cta-group { display: flex; flex-wrap: wrap; gap: 16px; }
-        .btn { padding: 16px 28px; border-radius: 16px; border: 1px solid transparent; font-weight: 600; font-size: 1rem; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; }
-        .btn.primary { background: linear-gradient(120deg, #4de3ff, #3f8cff); color: #03060d; box-shadow: 0 20px 45px rgba(63, 140, 255, 0.45); }
-        .btn.secondary { background: rgba(255, 255, 255, 0.05); color: var(--text); border-color: rgba(255, 255, 255, 0.2); }
-        .hero-media { background: rgba(8, 14, 26, 0.7); border-radius: 32px; padding: 24px; backdrop-filter: blur(26px); border: 1px solid var(--border); box-shadow: 0 25px 55px rgba(0, 0, 0, 0.45); position: relative; overflow: hidden; }
-        .hero-media::after { content: ''; position: absolute; inset: 12px; border-radius: 28px; border: 1px solid rgba(255, 255, 255, 0.08); pointer-events: none; }
-        .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; margin-top: 30px; }
-        .metric { background: rgba(255, 255, 255, 0.03); border-radius: 20px; padding: 18px 22px; border: 1px solid var(--border); }
-        .metric strong { font-size: 1.8rem; display: block; }
-        section { margin: 80px 0; }
-        .section-shell { background: var(--card); border-radius: 40px; padding: 48px; border: 1px solid var(--border); backdrop-filter: blur(25px); box-shadow: 0 25px 55px rgba(0, 0, 0, 0.4); }
-        .section-title { display: flex; justify-content: space-between; flex-wrap: wrap; align-items: baseline; gap: 12px; margin-bottom: 36px; }
-        .section-title h2 { font-size: 2rem; margin: 0; }
-        .section-title p { color: var(--muted); max-width: 520px; }
-        .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; }
-        .feature-card { padding: 28px; border-radius: 28px; background: rgba(9, 15, 28, 0.65); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; }
-        .feature-card h3 { margin: 0; font-size: 1.2rem; }
-        .feature-card span { color: var(--accent); letter-spacing: 0.3em; font-size: 0.7rem; }
-        .platforms { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 28px; }
-        .platform-card { padding: 32px; border-radius: 32px; border: 1px solid var(--border); background: rgba(5, 11, 22, 0.8); backdrop-filter: blur(20px); display: flex; flex-direction: column; gap: 16px; }
-        .platform-card img { width: 56px; height: 56px; border-radius: 16px; }
-        .platform-card ul { list-style: none; padding: 0; margin: 0; color: var(--muted); }
-        .platform-card ul li { margin-bottom: 6px; }
-        .workflow { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 28px; counter-reset: steps; }
-        .workflow-card { position: relative; padding: 28px; border-radius: 28px; border: 1px solid var(--border); background: rgba(7, 12, 24, 0.85); }
-        .workflow-card::before { counter-increment: steps; content: counter(steps, decimal-leading-zero); position: absolute; top: -20px; right: 28px; font-size: 4rem; color: rgba(255, 255, 255, 0.03); font-weight: 700; }
-        .workflow-card h3 { margin-top: 0; }
-        .architecture { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 28px; }
-        .list { list-style: none; padding: 0; margin: 0; color: var(--muted); }
-        .list li { margin-bottom: 12px; display: flex; gap: 12px; }
-        .list strong { color: var(--text); }
-        .video-frame { position: relative; overflow: hidden; border-radius: 32px; border: 1px solid var(--border); background: rgba(255, 255, 255, 0.02); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5); }
-        footer { margin: 90px 0 40px; text-align: center; color: var(--muted); }
-        footer a { color: var(--accent); text-decoration: none; margin: 0 12px; }
-        @media (max-width: 720px) {
-            nav { flex-direction: column; gap: 16px; }
-            .nav-links { flex-wrap: wrap; justify-content: center; }
-            .section-shell { padding: 32px 24px; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deck: your iPhone is the clicker</title>
+<meta name="description" content="Deck turns your iPhone and Apple Watch into a presentation remote for Keynote, PowerPoint and Google Slides on your Mac. No dongle, no account, no cloud.">
+<link rel="canonical" href="https://deck.dou.so/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://deck.dou.so/">
+<meta property="og:title" content="Deck: your iPhone is the clicker">
+<meta property="og:description" content="A presentation remote for iPhone and Apple Watch. Runs Keynote, PowerPoint and Google Slides on your Mac. No dongle.">
+<meta property="og:image" content="https://deck.dou.so/public/web/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#8fedcc">
+<link rel="icon" type="image/png" href="public/logo/ios-logo.png">
+<link rel="preload" href="public/web/archivo.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+/* The look follows the App Store panels in marketing/appstore: Archivo set
+   condensed, and fields in the app's own timer tints (ArcRemoteView.TimerTint). */
+@font-face {
+  font-family: "Archivo";
+  src: url("public/web/archivo.woff2") format("woff2");
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-display: swap;
+}
+
+:root {
+  --mint: #8fedcc;
+  --amber: #ffd17a;
+  --orange: #ff9e5c;
+  --coral: #ff6b66;
+  --gutter: clamp(20px, 5vw, 64px);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: #000;
+  color: #fff;
+  font-family: "Archivo", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  font-size: 1.0625rem;
+  font-weight: 450;
+  font-stretch: 98%;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+img { display: block; max-width: 100%; }
+a { color: inherit; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+
+/* ── Fields ───────────────────────────────────────────────────────────── */
+.field {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--field);
+  color: var(--ink);
+  transition: background-color 0.45s ease;
+  --band: rgba(255, 255, 255, 0.075);
+  --line: rgba(0, 0, 0, 0.3);
+}
+.mint   { --field: var(--mint);   --ink: #000; }
+.amber  { --field: var(--amber);  --ink: #000; }
+.orange { --field: var(--orange); --ink: #000; }
+.coral  { --field: var(--coral);  --ink: #000; }
+.night  { --field: #000; --ink: #fff; --band: rgba(255, 255, 255, 0.032); --line: rgba(255, 255, 255, 0.24); }
+.paper  { --field: #fff; --ink: #000; }
+
+svg.rings, svg.trace { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+svg.rings { z-index: -1; }
+svg.trace { z-index: 2; }
+
+.wrap { width: 100%; max-width: 1320px; margin-inline: auto; padding-inline: var(--gutter); }
+
+/* ── Type ─────────────────────────────────────────────────────────────── */
+.display {
+  margin: 0;
+  font-size: clamp(3.75rem, 9.5vw, 8.5rem);
+  line-height: 0.9;
+  font-weight: 800;
+  font-stretch: 62%;
+  letter-spacing: -0.012em;
+  word-spacing: 0.09em;
+}
+h1.display { font-size: clamp(4.4rem, 11.2vw, 10.25rem); }
+.lead {
+  margin: clamp(20px, 2.4vw, 34px) 0 0;
+  max-width: 27em;
+  font-size: clamp(1.1875rem, 1.75vw, 1.5rem);
+  line-height: 1.24;
+  font-weight: 500;
+  font-stretch: 96%;
+  letter-spacing: -0.012em;
+  opacity: 0.8;
+  text-wrap: balance;
+}
+.note { margin: 18px 0 0; max-width: 34em; font-size: 0.9375rem; opacity: 0.72; }
+
+/* ── Buttons ──────────────────────────────────────────────────────────── */
+.actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: clamp(26px, 3vw, 40px); }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 54px; padding: 0 26px;
+  border: 2px solid var(--ink); border-radius: 999px;
+  background: var(--ink); color: var(--field);
+  font: inherit; font-weight: 700; font-size: 1.0625rem; text-decoration: none;
+  cursor: pointer;
+}
+.btn.quiet { background: transparent; color: var(--ink); }
+.btn:hover { opacity: 0.86; }
+.btn.small { min-height: 42px; padding: 0 18px; font-size: 0.9375rem; }
+
+/* ── Header ───────────────────────────────────────────────────────────── */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 22px; }
+.brand { display: flex; align-items: center; gap: 12px; text-decoration: none; font-size: 1.9rem; font-weight: 800; font-stretch: 62%; line-height: 1; }
+.brand img { width: 42px; height: 42px; border-radius: 22.5%; background: #fff; }
+.top nav { display: flex; align-items: center; gap: clamp(14px, 2.4vw, 30px); font-weight: 650; }
+.top nav a:not(.btn) { text-decoration: none; }
+.top nav a:not(.btn):hover { text-decoration: underline; }
+
+/* ── Split sections: copy left, device right ──────────────────────────── */
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: clamp(32px, 5vw, 72px);
+  align-items: center;
+  padding-block: clamp(72px, 9vw, 128px);
+}
+.hero .split { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); padding-top: clamp(28px, 4vw, 56px); }
+.stage { display: flex; justify-content: flex-end; min-width: 0; }
+
+/* ── iPhone ───────────────────────────────────────────────────────────── */
+.phone {
+  --w: clamp(236px, 25.5vw, 336px);
+  position: relative;
+  flex: none;
+  width: var(--w);
+  height: calc(var(--w) * 2868 / 1320);
+  margin: calc(var(--w) * 0.03);
+  border-radius: calc(var(--w) * 0.141);
+  background: #000;
+  box-shadow:
+    0 0 0 calc(var(--w) * 0.021) #000,
+    0 0 0 calc(var(--w) * 0.0275) #4a4b50,
+    0 calc(var(--w) * 0.07) calc(var(--w) * 0.14) calc(var(--w) * 0.01) rgba(0, 0, 0, 0.32);
+}
+.phone img { width: 100%; height: 100%; border-radius: inherit; }
+.phone::after { /* Dynamic Island */
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: calc(var(--w) * 0.032);
+  width: calc(var(--w) * 0.285);
+  height: calc(var(--w) * 0.084);
+  margin-left: calc(var(--w) * -0.1425);
+  border-radius: 999px;
+  background: #000;
+}
+/* Timer section keeps three captures stacked and shows one */
+.phone.stack img { position: absolute; inset: 0; opacity: 0; transition: opacity 0.35s ease; }
+.phone.stack img.on { opacity: 1; }
+
+/* ── Film ─────────────────────────────────────────────────────────────── */
+.film-block { padding-block: clamp(72px, 9vw, 128px); }
+.film-head { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: clamp(20px, 5vw, 72px); align-items: end; }
+.film-head .lead { margin: 0 0 0.5em; }
+.film {
+  position: relative; display: block;
+  margin-top: clamp(32px, 4.5vw, 60px);
+  aspect-ratio: 16 / 9;
+  border-radius: clamp(16px, 2.4vw, 32px);
+  overflow: hidden;
+  background: #2f6fed;
+}
+.film img, .film iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; object-fit: cover; }
+.film .play { /* the app's white Next button, pointing at the film */
+  position: absolute; left: 60.5%; top: 50%; /* the gap between the wordmark and the watch on the poster */
+  width: clamp(48px, 9vw, 116px); aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: #f2f2f2; color: #000;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+  transition: transform 0.18s ease;
+}
+.film .play svg { width: 34%; margin-left: 6%; }
+.film:hover .play { transform: translate(-50%, -50%) scale(1.06); }
+.film:active .play { transform: translate(-50%, -50%) scale(0.92); }
+
+/* ── Timer stops ──────────────────────────────────────────────────────── */
+.stops { margin: clamp(26px, 3vw, 40px) 0 0; padding: 0; border: 0; }
+.stops legend { padding: 0; margin-bottom: 10px; font-size: 0.9375rem; font-weight: 600; opacity: 0.72; }
+.stops .seg { display: inline-flex; padding: 4px; border: 2px solid #000; border-radius: 999px; }
+.stops label { position: relative; cursor: pointer; }
+.stops input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.stops span {
+  display: block; padding: 9px 18px; border-radius: 999px;
+  font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.stops input:checked + span { background: #000; color: var(--field); transition: color 0.45s ease; }
+.stops input:focus-visible + span { outline: 3px solid #000; outline-offset: 3px; }
+
+/* ── Pointer: a Mac slide under the spotlight ─────────────────────────── */
+.aim { margin: clamp(28px, 3.4vw, 48px) 0 0; padding: 0; list-style: none; font-size: clamp(2.25rem, 4.4vw, 4rem); line-height: 1.1; font-weight: 800; font-stretch: 62%; word-spacing: 0.09em; }
+.aim li + li { opacity: 0.55; }
+.pointer-stage {
+  position: relative;
+  width: 100%; max-width: 520px;
+  aspect-ratio: 100 / 146;
+  container-type: inline-size;
+  --sw: 90cqw;
+}
+.laptop { position: absolute; left: 5cqw; top: 0; width: var(--sw); }
+.laptop::after { /* base */
+  content: "";
+  display: block;
+  height: calc(var(--sw) * 0.027);
+  margin: 0 calc(var(--sw) * -0.046);
+  border-radius: 3px 3px calc(var(--sw) * 0.023) calc(var(--sw) * 0.023);
+  background: linear-gradient(#6b6c70, #2c2c2f 60%);
+}
+.slide {
+  position: relative;
+  height: calc(var(--sw) * 0.625);
+  padding: calc(var(--sw) * 0.065) calc(var(--sw) * 0.074);
+  border: calc(var(--sw) * 0.0176) solid #1a1a1c;
+  border-bottom-width: calc(var(--sw) * 0.023);
+  border-radius: calc(var(--sw) * 0.03) calc(var(--sw) * 0.03) 0 0;
+  background: #fff;
+  color: #000;
+  overflow: hidden;
+  cursor: none;
+  touch-action: pan-y;
+  --hx: 70%; --hy: 50%;
+}
+.slide h3 { margin: 0 0 calc(var(--sw) * 0.044); font-size: calc(var(--sw) * 0.067); line-height: 1.1; font-weight: 800; font-stretch: 70%; letter-spacing: -0.01em; word-spacing: 0.09em; }
+.bars { margin: 0; padding: 0; list-style: none; display: grid; gap: calc(var(--sw) * 0.026); }
+.bars li { display: flex; align-items: center; font-size: calc(var(--sw) * 0.0335); font-weight: 500; line-height: 1; }
+.bars b { flex: none; width: 22%; font-weight: 500; }
+.bars i { flex: none; height: calc(var(--sw) * 0.06); width: calc(var(--v) * 1.25); border-radius: 0 calc(var(--sw) * 0.01) calc(var(--sw) * 0.01) 0; background: #d6d6d9; }
+.bars .hot i { background: var(--coral); }
+.bars span { margin-left: calc(var(--sw) * 0.021); font-weight: 700; white-space: nowrap; }
+/* SpotlightOverlay: 65% dim around a hole that follows the pointer */
+.dim {
+  position: absolute; inset: 0;
+  --r: calc(var(--sw) * 0.116);
+  background: radial-gradient(circle var(--r) at var(--hx) var(--hy), transparent calc(var(--r) - 2px), rgba(0, 0, 0, 0.65) var(--r));
+  pointer-events: none;
+}
+.cursor { position: absolute; left: var(--hx); top: var(--hy); width: calc(var(--sw) * 0.055); margin: calc(var(--sw) * -0.006) 0 0 calc(var(--sw) * -0.011); pointer-events: none; }
+.pointer-stage .phone { --w: 44cqw; position: absolute; right: 2cqw; top: calc(var(--sw) * 0.535); margin: 0; }
+
+/* ── Arrange: two phones ──────────────────────────────────────────────── */
+.pair { position: relative; width: 100%; max-width: 500px; aspect-ratio: 100 / 152; container-type: inline-size; }
+.pair .phone { --w: 55cqw; position: absolute; margin: 0; }
+.pair .phone:first-child { left: 2cqw; top: 2cqw; }
+.pair .phone:last-child { right: 2cqw; top: 28cqw; }
+
+/* ── Apple Watch ──────────────────────────────────────────────────────── */
+.watch-wrap {
+  --w: clamp(190px, 21vw, 280px);
+  position: relative;
+  flex: none;
+  width: var(--w);
+  height: calc(var(--w) * 496 / 416);
+  margin: calc(var(--w) * 0.5) clamp(0px, 4vw, 56px) calc(var(--w) * 0.56);
+}
+.watch-wrap .band {
+  position: absolute;
+  left: 13%; right: 13%; top: -64%; bottom: -70%;
+  border-radius: calc(var(--w) * 0.1);
+  background: linear-gradient(90deg, #17171a, #2a2a2e 22%, #2a2a2e 78%, #17171a);
+  -webkit-mask-image: linear-gradient(transparent, #000 24%, #000 76%, transparent);
+          mask-image: linear-gradient(transparent, #000 24%, #000 76%, transparent);
+}
+.watch {
+  position: absolute; inset: calc(var(--w) * -0.075);
+  padding: calc(var(--w) * 0.075);
+  border-radius: calc(var(--w) * 0.27);
+  background: #000;
+  box-shadow:
+    inset 0 0 0 calc(var(--w) * 0.012) #3a3b3f,
+    0 0 0 calc(var(--w) * 0.012) #5a5b60;
+}
+.watch img { width: 100%; height: 100%; border-radius: calc(var(--w) * 0.19); }
+.watch::after { /* Digital Crown */
+  content: "";
+  position: absolute;
+  right: calc(var(--w) * -0.052);
+  top: 26%;
+  width: calc(var(--w) * 0.05);
+  height: calc(var(--w) * 0.17);
+  border-radius: calc(var(--w) * 0.02);
+  background: repeating-linear-gradient(#7c7d82 0 2px, #4a4b50 2px 4px);
+}
+
+/* ── Set up ───────────────────────────────────────────────────────────── */
+.setup { padding-block: clamp(72px, 9vw, 128px); }
+.steps { margin: clamp(36px, 5vw, 64px) 0 0; padding: 0; list-style: none; counter-reset: step; border-bottom: 2px solid #000; }
+.steps > li {
+  display: grid;
+  grid-template-columns: clamp(64px, 9vw, 128px) minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: 20px clamp(24px, 4vw, 56px);
+  align-items: start;
+  padding-block: clamp(26px, 3.2vw, 40px);
+  border-top: 2px solid #000;
+  counter-increment: step;
+}
+.steps > li::before {
+  content: counter(step);
+  font-size: clamp(4rem, 8vw, 7rem);
+  line-height: 0.82;
+  font-weight: 800;
+  font-stretch: 62%;
+}
+.steps h3 { margin: 0; font-size: clamp(1.75rem, 3vw, 2.5rem); line-height: 1; font-weight: 800; font-stretch: 68%; word-spacing: 0.06em; }
+.steps p { margin: 12px 0 0; max-width: 30em; opacity: 0.8; }
+.steps .do { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; justify-items: start; min-width: 0; }
+.steps .do p { margin: 0; font-size: 0.9375rem; }
+.term { position: relative; width: 100%; border-radius: 18px; background: #000; color: #fff; }
+.term pre {
+  margin: 0; padding: 22px 96px 22px 22px;
+  overflow-x: auto;
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9375rem; line-height: 1.8;
+}
+.term .btn { position: absolute; right: 12px; top: 12px; --ink: #fff; --field: #000; }
+.term code { font-family: inherit; }
+.steps code { font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; }
+
+/* ── Close ────────────────────────────────────────────────────────────── */
+.icon {
+  --w: clamp(150px, 17vw, 230px);
+  flex: none;
+  width: var(--w); height: var(--w);
+  margin: calc(var(--w) * 0.5) clamp(0px, 6vw, 90px);
+  border-radius: 22.5%;
+  background: #fff;
+  box-shadow: 0 calc(var(--w) * 0.08) calc(var(--w) * 0.16) rgba(0, 0, 0, 0.22);
+}
+.icon img { width: 100%; height: 100%; border-radius: inherit; }
+
+footer { padding-block: 34px 44px; font-size: 0.9375rem; }
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 14px 28px; }
+footer nav { display: flex; flex-wrap: wrap; gap: 8px 24px; }
+footer a { text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+footer p { margin: 0; opacity: 0.6; }
+
+/* ── Small screens: headline on top, device below, like the store panels ─ */
+@media (max-width: 860px) {
+  .split, .hero .split, .film-head { grid-template-columns: minmax(0, 1fr); }
+  .stage { justify-content: center; }
+  .phone { --w: min(70vw, 300px); }
+  .stage > .phone { margin-left: 12%; }
+  .pointer-stage, .pair { max-width: 440px; }
+  .watch-wrap { --w: min(52vw, 230px); }
+  .icon { --w: min(42vw, 180px); margin-block: calc(var(--w) * 0.45); }
+  .steps > li { grid-template-columns: 52px minmax(0, 1fr); }
+  .steps > li::before { font-size: 3.5rem; }
+  .steps .do { grid-column: 1 / -1; }
+  .term pre { padding: 18px 18px 18px 18px; font-size: 0.875rem; }
+  .term .btn { position: static; margin: 0 0 14px 18px; }
+}
+@media (max-width: 560px) {
+  .top nav .wide { display: none; }
+}
+
+/* One orchestrated moment: the hero arcs open out from the thumb's pivot */
+@media (prefers-reduced-motion: no-preference) {
+  svg.rings.intro > * { animation: ring-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: calc(var(--i) * 70ms); }
+  @keyframes ring-in { from { opacity: 0; transform: scale(0.82); } }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition: none !important; }
+}
+</style>
 </head>
 <body>
-    <main>
-        <nav>
-            <div class="brand">
-                <img src="public/logo/ios-logo.png" alt="Deck logo">
-                <div>
-                    <div>Deck</div>
-                    <small>By DOU Inc.</small>
-                </div>
-            </div>
-            <div class="nav-links">
-                <a href="#features">Features</a>
-                <a href="#platforms">Platforms</a>
-                <a href="#workflow">Workflow</a>
-                <a href="/support">Support</a>
-            </div>
-        </nav>
 
-        <section class="hero">
-            <div>
-                <div class="pill">SwiftUI • MultipeerConnectivity • WatchConnectivity</div>
-                <h1>Presentation Remote for Apple Fans</h1>
-                <p>
-                    Control Keynote, PowerPoint, or Google Slides without dongles or cloud accounts. Deck pairs your Mac,
-                    iPhone, and Apple Watch using encrypted local networking so every tap lands exactly when you need it.
-                </p>
-                <div class="cta-group">
-                    <a class="btn primary" href="https://apps.apple.com/us/app/deck/id6758130180" target="_blank" rel="noopener">Install for iOS and Watch</a>
-                    <a class="btn secondary" href="https://github.com/douinc/deck/releases" target="_blank" rel="noopener">Install for Mac</a>
-                </div>
-                <div class="metrics">
-                    <div class="metric"><strong>Mac 2.0.0</strong><span>Deck</span></div>
-                    <div class="metric"><strong>iOS 2.0.0</strong><span>Deck</span></div>
-                    <div class="metric"><strong>watchOS 2.0.0</strong><span>Deck</span></div>
-                </div>
-            </div>
-            <div class="hero-media">
-                <div class="video-frame">
-                    <video autoplay muted loop playsinline poster="public/screenshot/ios/3-connect.png">
-                        <source src="public/demo.MP4" type="video/mp4">
-                        Your browser does not support the Deck demo video.
-                    </video>
-                </div>
-            </div>
-        </section>
+<header class="field mint hero" data-rings="p-hero">
+  <div class="wrap top">
+    <a class="brand" href="/"><img src="public/web/logo.webp" alt="" width="42" height="42">Deck</a>
+    <nav aria-label="Main">
+      <a class="wide" href="#setup">Mac app</a>
+      <a href="/support">Support</a>
+      <a class="btn small" href="https://apps.apple.com/us/app/deck/id6758130180">App Store</a>
+    </nav>
+  </div>
+  <div class="wrap split">
+    <div>
+      <h1 class="display">Your iPhone<br>is the<br>clicker.</h1>
+      <p class="lead">Runs Keynote, PowerPoint and Google Slides on your Mac. No dongle.</p>
+      <div class="actions">
+        <a class="btn" href="https://apps.apple.com/us/app/deck/id6758130180">Download on the App Store</a>
+        <a class="btn quiet" href="#setup">Get the Mac app</a>
+      </div>
+      <p class="note">7-day free trial, then $19.99 a year. The Mac app is free and open source.</p>
+    </div>
+    <div class="stage">
+      <div class="phone" id="p-hero"><img src="public/web/run-mint.webp" width="720" height="1564" alt="Deck on iPhone. A timer reads 12:18 left of 20 minutes, above an arc of round buttons with one large white Next button."></div>
+    </div>
+  </div>
+</header>
 
-        <section id="features" class="section-shell">
-            <div class="section-title">
-                <h2>Designed for stage control, not slide anxiety</h2>
-                <p>Swift 5.9, SwiftUI, and Apple’s haptics toolkit combine for a tactile experience that mirrors the decks pros carry on stage. Every surface follows the liquid glass aesthetic outlined in our product design language.</p>
-            </div>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <span>01</span>
-                    <h3>Peer-to-peer reliability</h3>
-                    <p>No external servers, accounts, or analytics. The Mac advertises Bonjour services and the iPhone joins instantly on the same network.</p>
-                </div>
-                <div class="feature-card">
-                    <span>02</span>
-                    <h3>Cross-device control</h3>
-                    <p>Apple Watch double-tap gestures and Digital Crown rotation trigger the same RemoteCommand used by the iPhone UI, routed through WatchConnectivity.</p>
-                </div>
-                <div class="feature-card">
-                    <span>03</span>
-                    <h3>Timer with haptic cues</h3>
-                    <p>Set presentation timers and feel pulses as milestones approach—ideal for keynotes with tight run-of-show schedules.</p>
-                </div>
-                <div class="feature-card">
-                    <span>04</span>
-                    <h3>Menu bar minimalism</h3>
-                    <p>The macOS receiver lives in the menu bar, requests accessibility permissions once, and injects previous and next keystrokes for any frontmost app.</p>
-                </div>
-            </div>
-        </section>
+<main>
 
-        <section id="platforms" class="section-shell">
-            <div class="section-title">
-                <h2>One system, three tailored experiences</h2>
-                <p>Each binary ships with the right distribution channel: App Store for iPhone + Watch, notarized DMG for Mac. Shared Swift packages keep RemoteCommand and networking logic aligned.</p>
-            </div>
-            <div class="platforms">
-                <div class="platform-card">
-                    <img src="public/logo/ios-logo.png" alt="iOS logo">
-                    <h3>Deck (iPhone)</h3>
-                    <ul>
-                        <li>Liquid glass vertical remote layout</li>
-                        <li>Dark-only UI for backstage visibility</li>
-                        <li>Subscription-ready with trials</li>
-                        <li>Automatic Mac discovery via MultipeerConnectivity</li>
-                        <li>Live Activities on Lock Screen &amp; Dynamic Island</li>
-                    </ul>
-                </div>
-                <div class="platform-card">
-                    <img src="public/logo/mac-logo.png" alt="macOS logo">
-                    <h3>Deck (Mac)</h3>
-                    <ul>
-                        <li>Signed + notarized DMG workflow</li>
-                        <li>Menu bar controller and keystroke bridge</li>
-                        <li>Hardened Runtime, accessibility permissions</li>
-                        <li>DMG distributed on GitHub with Homebrew tap</li>
-                    </ul>
-                </div>
-                <div class="platform-card">
-                    <img src="public/logo/ios-logo.png" alt="Apple Watch screenshot" style="object-fit: cover;">
-                    <h3>Deck (Apple Watch)</h3>
-                    <ul>
-                        <li>Installed automatically with iOS app</li>
-                        <li>Digital Crown rotation for slide navigation</li>
-                        <li>Double-tap gesture for hands-free next slide</li>
-                        <li>Extended runtime session keeps app alive</li>
-                        <li>Relays commands through iPhone instantly</li>
-                    </ul>
-                </div>
-            </div>
-        </section>
+<section class="field night" aria-labelledby="film-h">
+  <div class="wrap film-block">
+    <div class="film-head">
+      <h2 class="display" id="film-h">Watch it<br>run a talk.</h2>
+      <p class="lead">Thirty seconds. Every slide change in the film comes from a real tap, double tap or wrist flick.</p>
+    </div>
+    <a class="film" href="https://youtu.be/bQY4ZfCDE-s" data-yt="bQY4ZfCDE-s">
+      <img src="public/web/film-poster.webp" width="1280" height="720" loading="lazy" alt="">
+      <span class="play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 3.2v17.6L20.5 12z" fill="currentColor"/></svg></span>
+      <span class="sr-only">Play the Deck film, 30 seconds</span>
+    </a>
+  </div>
+</section>
 
-        <section class="section-shell" id="workflow">
-            <div class="section-title">
-                <h2>Simple onboarding before showtime</h2>
-                <p>Install the Mac App and iOS app. Test the iOS or Watch app. Connect your Mac to the screen.</p>
-            </div>
-            <div class="workflow">
-                <div class="workflow-card">
-                    <h3>Install the Mac receiver</h3>
-                    <p>Download the notarized DMG, drag `Deck` to Applications, and grant accessibility control when prompted.</p>
-                </div>
-                <div class="workflow-card">
-                    <h3>Pair the iPhone remote</h3>
-                    <p>Install from the App Store, open Deck, and select your Mac from the Bonjour list. No manual IP addresses required.</p>
-                </div>
-                <div class="workflow-card">
-                    <h3>Activate the Watch</h3>
-                    <p>The Watch companion installs automatically. Use the Digital Crown, double-tap gesture, or on-screen buttons to control slides from your wrist.</p>
-                </div>
-                <div class="workflow-card">
-                    <h3>Present with confidence</h3>
-                    <p>Swipe or tap to advance slides while the timer, haptics, and liquid glass UI keep you focused on your story.</p>
-                </div>
-            </div>
-        </section>
+<section class="field amber" data-rings="p-thumb" data-trace aria-labelledby="thumb-h">
+  <div class="wrap split">
+    <div>
+      <h2 class="display" id="thumb-h">Built for<br>one thumb.</h2>
+      <p class="lead">Every control sits on the arc your thumb already makes, so your eyes stay on the room.</p>
+    </div>
+    <div class="stage">
+      <div class="phone" id="p-thumb"><img src="public/web/run-amber.webp" width="720" height="1564" loading="lazy" alt="The Deck remote with 4:00 left. Dotted lines trace the two arcs the buttons sit on."></div>
+    </div>
+  </div>
+</section>
 
-        <section class="section-shell">
-            <div class="section-title">
-                <h2>Install via Homebrew</h2>
-                <p>Get the Mac receiver up and running in seconds with Homebrew. No manual downloads or drag-and-drop required.</p>
-            </div>
-            <div style="background: rgba(9, 15, 28, 0.65); border-radius: 20px; border: 1px solid var(--border); padding: 28px; font-family: 'SF Mono', SFMono-Regular, Menlo, monospace; font-size: 0.95rem; line-height: 2; color: var(--muted); overflow-x: auto;">
-                <div><span style="color: rgba(255,255,255,0.35);">$</span> <span style="color: var(--text);">brew tap douinc/deck https://github.com/douinc/deck</span></div>
-                <div><span style="color: rgba(255,255,255,0.35);">$</span> <span style="color: var(--text);">brew install --cask deck</span></div>
-            </div>
-        </section>
+<section class="field orange" id="timer" data-rings="p-timer" aria-labelledby="timer-h">
+  <div class="wrap split">
+    <div>
+      <h2 class="display" id="timer-h">Finish<br>on time.</h2>
+      <p class="lead">Slide the arc to set your limit. Your iPhone buzzes at halftime and when time’s up.</p>
+      <fieldset class="stops">
+        <legend>See a 20-minute talk with</legend>
+        <div class="seg">
+          <label><input type="radio" name="stop" value="mint"><span>12:18 left</span></label>
+          <label><input type="radio" name="stop" value="amber"><span>4:00 left</span></label>
+          <label><input type="radio" name="stop" value="orange" checked><span>1:15 left</span></label>
+        </div>
+      </fieldset>
+      <p class="note">The countdown also shows on your Lock Screen and in the Dynamic Island.</p>
+    </div>
+    <div class="stage">
+      <div class="phone stack" id="p-timer" role="img" aria-label="The Deck timer. Its digits and arc shift from mint to amber to orange as time runs out.">
+        <img src="public/web/run-mint.webp" width="720" height="1564" loading="lazy" alt="" data-stop="mint">
+        <img src="public/web/run-amber.webp" width="720" height="1564" loading="lazy" alt="" data-stop="amber">
+        <img class="on" src="public/web/run-urgent.webp" width="720" height="1564" loading="lazy" alt="" data-stop="orange">
+      </div>
+    </div>
+  </div>
+</section>
 
-        <section class="section-shell">
-            <div class="section-title">
-                <h2>Architecture snapshot</h2>
-                <p>Every layer is documented in the GitHub wiki and compiled via XcodeGen for reproducible builds.</p>
-            </div>
-            <div class="architecture">
-                <div>
-                    <h3>Stack</h3>
-                    <ul class="list">
-                        <li><strong>Language:</strong> Swift 5.9 with shared RemoteCommand models</li>
-                        <li><strong>UI:</strong> SwiftUI</li>
-                        <li><strong>Networking:</strong> MultipeerConnectivity + WatchConnectivity</li>
-                        <li><strong>Build:</strong> XcodeGen + `just` automation</li>
-                        <li><strong>Platforms:</strong> macOS 14+, iOS 18+, watchOS 10+</li>
-                    </ul>
-                </div>
-                <div>
-                    <h3>Distribution</h3>
-                    <ul class="list">
-                        <li><strong>iOS &amp; Watch:</strong> App Store via TestFlight pipeline</li>
-                        <li><strong>Mac:</strong> Signed + notarized DMG</li>
-                        <li><strong>Homebrew tap:</strong> Easily download and update Deck Mac app using homebrew</li>
-                    </ul>
-                </div>
-                <div>
-                    <h3>Security posture</h3>
-                    <ul class="list">
-                        <li><strong>Local only:</strong> Commands stay on your network</li>
-                        <li><strong>Accessibility:</strong> Minimal permissions, once per Mac</li>
-                        <li><strong>Hardened Runtime:</strong> Required for notarization</li>
-                        <li><strong>Crown threshold:</strong> 3-detent threshold prevents accidental slide jumps</li>
-                    </ul>
-                </div>
-            </div>
-        </section>
+<section class="field night" data-rings="p-pointer" aria-labelledby="pointer-h">
+  <div class="wrap split">
+    <div>
+      <h2 class="display" id="pointer-h">Point like<br>a laser.</h2>
+      <p class="lead">Hold the pointer button and aim your iPhone. Spotlight dims everything but your point.</p>
+      <ul class="aim">
+        <li>Hold to aim.</li>
+        <li>Tap to click.</li>
+      </ul>
+      <p class="note">Try it here: move across the slide.</p>
+    </div>
+    <div class="stage">
+      <div class="pointer-stage">
+        <div class="laptop" role="img" aria-label="A slide on a Mac. Deck’s spotlight dims everything except a circle around the pointer.">
+          <div class="slide" id="slide">
+            <h3>Where the 20 minutes go</h3>
+            <ul class="bars">
+              <li style="--v:15%"><b>Intro</b><i></i><span>3 min</span></li>
+              <li style="--v:45%" class="hot"><b>Live demo</b><i></i><span>9 min</span></li>
+              <li style="--v:25%"><b>Results</b><i></i><span>5 min</span></li>
+              <li style="--v:15%"><b>Questions</b><i></i><span>3 min</span></li>
+            </ul>
+            <div class="dim"></div>
+            <svg class="cursor" viewBox="0 0 24 24"><path d="M5 2.5v17.2l4.6-4.3 3 6.9 3-1.3-3-6.8h6.3z" fill="#000" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+        <div class="phone" id="p-pointer"><img src="public/web/pointer.webp" width="720" height="1564" loading="lazy" alt="The Deck remote with the pointer button held. The other buttons fade and a caption reads Pointer active."></div>
+      </div>
+    </div>
+  </div>
+</section>
 
-        <section class="section-shell" id="support">
-            <div class="section-title">
-                <h2>Need help or ready to contribute?</h2>
-                <p>Everything—Swift code, wiki docs, and distribution scripts—lives on GitHub. File issues, follow TestFlight betas, or contact the team directly.</p>
-            </div>
-            <div class="cta-group">
-                <a class="btn primary" href="/support">Contact Support</a>
-                <a class="btn secondary" href="https://github.com/douinc/deck" target="_blank" rel="noopener">Explore the repository</a>
-                <a class="btn secondary" href="https://github.com/douinc/deck/wiki" target="_blank" rel="noopener">Read the wiki</a>
-            </div>
-        </section>
+<section class="field coral" data-rings="p-arrange" aria-labelledby="arrange-h">
+  <div class="wrap split">
+    <div>
+      <h2 class="display" id="arrange-h">Move any<br>button.</h2>
+      <p class="lead">Touch and hold, then drag each control to where your thumb wants it. Left-handed? Flip the layout.</p>
+    </div>
+    <div class="stage">
+      <div class="pair">
+        <div class="phone"><img src="public/web/left.webp" width="720" height="1564" loading="lazy" alt="The Deck remote mirrored for the left hand."></div>
+        <div class="phone" id="p-arrange"><img src="public/web/arranging.webp" width="720" height="1564" loading="lazy" alt="Arrange Buttons mode: drag each button to where your thumb wants it."></div>
+      </div>
+    </div>
+  </div>
+</section>
 
-        <footer>
-            <p>
-                <a href="PRIVACY_POLICY.html">Privacy Policy</a>
-                <a href="TERMS_OF_SERVICE.html">Terms of Service</a>
-                <a href="/support">Support</a>
-            </p>
-            <p>© 2026 DOU Inc. Distributed under the MIT License.</p>
-        </footer>
-    </main>
+<section class="field night" data-rings="w-watch" data-ring-center aria-labelledby="watch-h">
+  <div class="wrap split">
+    <div>
+      <h2 class="display" id="watch-h">Or use<br>your wrist.</h2>
+      <p class="lead">Double tap your fingers, flick your wrist or turn the Digital Crown to change slides from Apple Watch.</p>
+      <p class="note">Double tap needs Apple Watch Series 9 or later, or Ultra 2.</p>
+    </div>
+    <div class="stage">
+      <div class="watch-wrap" id="w-watch">
+        <div class="band"></div>
+        <div class="watch"><img src="public/web/watch.webp" width="416" height="496" loading="lazy" alt="Deck on Apple Watch: a large round Next button, a smaller Previous button and the talk timer."></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="field paper" id="setup" aria-labelledby="setup-h">
+  <div class="wrap setup">
+    <h2 class="display" id="setup-h">Two installs,<br>then present.</h2>
+    <ol class="steps">
+      <li>
+        <div>
+          <h3>Install Deck on your Mac</h3>
+          <p>It sits in the menu bar and presses the arrow keys for you. Allow Accessibility the first time it asks.</p>
+        </div>
+        <div class="do">
+          <div class="term">
+            <pre><code id="brew">brew tap douinc/tap
+brew install --cask deck</code></pre>
+            <button class="btn small" type="button" data-copy="brew">Copy</button>
+          </div>
+          <p>No Homebrew? <a href="https://github.com/douinc/deck/releases/latest">Download the DMG</a>. If Homebrew calls the tap untrusted, run <code>brew trust douinc/tap</code> once.</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h3>Install Deck on your iPhone</h3>
+          <p>The Apple Watch app comes with it.</p>
+        </div>
+        <div class="do">
+          <a class="btn" href="https://apps.apple.com/us/app/deck/id6758130180">Download on the App Store</a>
+          <p>7-day free trial, then $19.99 a year.</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h3>Open both and tap your Mac</h3>
+          <p>Your iPhone finds the Mac on the same Wi‑Fi. Deck then drives whatever app is in front: Keynote, PowerPoint, Google Slides, Figma.</p>
+        </div>
+        <div class="do">
+          <p>Needs macOS 14, iOS 18 and watchOS 10 or later.</p>
+          <p>Mac not showing up? <a href="/support">Get help</a>.</p>
+        </div>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<section class="field mint" data-rings="i-close" data-ring-center aria-labelledby="close-h">
+  <div class="wrap split">
+    <div>
+      <h2 class="display" id="close-h">No dongle.<br>No account.<br>No cloud.</h2>
+      <p class="lead">Deck connects your iPhone straight to your Mac over your own Wi‑Fi. It works with no internet at all.</p>
+      <div class="actions">
+        <a class="btn" href="https://apps.apple.com/us/app/deck/id6758130180">Download on the App Store</a>
+        <a class="btn quiet" href="https://github.com/douinc/deck">Read the source</a>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="icon" id="i-close"><img src="public/web/logo.webp" width="320" height="320" loading="lazy" alt="The Deck app icon"></div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <nav aria-label="Footer">
+      <a href="/support">Support</a>
+      <a href="PRIVACY_POLICY.html">Privacy</a>
+      <a href="TERMS_OF_SERVICE.html">Terms</a>
+      <a href="https://github.com/douinc/deck">GitHub</a>
+    </nav>
+    <p>© 2026 DOU Inc. MIT licensed.</p>
+  </div>
+</footer>
+
+<script>
+// Thumb arcs, extended out of the phone and across each field.
+// Geometry mirrors ArcLayout in iPhoneApp/ArcRemoteView.swift (and
+// marketing/appstore/rings.js): the pivot sits just outside the bottom corner
+// on the holding side; the rows sit at 0.70 / 1.08 / 1.315 screen widths from it.
+(function () {
+  const NS = 'http://www.w3.org/2000/svg';
+  const PHI = 1.618034;
+  const INNER = 0.70, OUTER = 1.08;
+  const TIMER = OUTER + (OUTER - INNER) / PHI;
+  const FAR = [TIMER + 0.38, TIMER + 0.38 + 0.615, TIMER + 0.38 + 0.615 + 0.995];
+  const el = (name, attrs) => {
+    const node = document.createElementNS(NS, name);
+    for (const key in attrs) node.setAttribute(key, attrs[key]);
+    return node;
+  };
+  let introPlayed = false;
+
+  function draw(field) {
+    const target = document.getElementById(field.dataset.rings);
+    const f = field.getBoundingClientRect(), t = target.getBoundingClientRect();
+    if (!t.width || !f.width) return;
+    const W = f.width, H = f.height, w = t.width, h = t.height;
+    const x = t.left - f.left, y = t.top - f.top;
+    const centered = 'ringCenter' in field.dataset;
+    const k = w / 1320;
+    // In a 1320 px capture the pivot is at (1386, 2766)
+    const px = centered ? x + w / 2 : x + 1386 * k;
+    const py = centered ? y + h / 2 : y + 2766 * k;
+    const unit = centered ? w * 0.8 : w;
+    const at = (r, deg) => {
+      const a = deg * Math.PI / 180;
+      return [px - r * Math.cos(a), py - r * Math.sin(a)];
+    };
+
+    field.querySelectorAll(':scope > svg.rings, :scope > svg.trace').forEach(s => s.remove());
+    const svg = el('svg', { class: 'rings', viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'none', 'aria-hidden': 'true' });
+    let i = 0;
+    const add = node => { node.style.setProperty('--i', i++); node.style.transformOrigin = `${px}px ${py}px`; svg.append(node); };
+    for (const r of [INNER, OUTER, TIMER].concat(FAR)) {
+      add(el('circle', { cx: px, cy: py, r: r * unit, fill: 'var(--band)' }));
+    }
+    for (const r of [INNER, OUTER, TIMER]) {
+      add(el('circle', { cx: px, cy: py, r: r * unit, fill: 'none', stroke: 'var(--line)', 'stroke-width': 1.25 }));
+    }
+    // Minute ticks on the timer ring, continuing the 30 the app draws on screen
+    if (!centered) {
+      const start = 40.8, step = (85.4 - 40.8) / 30;
+      let d = '';
+      for (let n = -40; n <= 110; n++) {
+        const deg = start + step * n;
+        const len = (n % 5 === 0 ? 13.1 : 5) * 3 * k;
+        const a = at(TIMER * unit + 18 * k, deg), b = at(TIMER * unit + 18 * k + len, deg);
+        d += `M${a[0].toFixed(1)} ${a[1].toFixed(1)}L${b[0].toFixed(1)} ${b[1].toFixed(1)}`;
+      }
+      add(el('path', { d, stroke: 'var(--line)', 'stroke-width': 1.5, 'stroke-linecap': 'round', fill: 'none' }));
+    }
+    if (field.classList.contains('hero') && !introPlayed) { svg.classList.add('intro'); introPlayed = true; }
+    field.prepend(svg);
+
+    // Trace the two button rows on the screen, broken where a button sits
+    if ('trace' in field.dataset) {
+      const top = el('svg', { class: 'trace', viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'none', 'aria-hidden': 'true' });
+      const id = 'screen-' + target.id;
+      const mask = el('mask', { id, maskUnits: 'userSpaceOnUse', x: 0, y: 0, width: W, height: H });
+      mask.append(el('rect', { x, y, width: w, height: h, rx: w * 0.141, fill: '#fff' }));
+      const buttons = [[INNER, 23, 0.175], [INNER, 49, 0.235], [INNER, 75, 0.175], [OUTER, 39, 0.175], [OUTER, 58, 0.175], [OUTER, 77, 0.175]];
+      for (const [r, deg, diameter] of buttons) {
+        const c = at(r * unit, deg);
+        mask.append(el('circle', { cx: c[0], cy: c[1], r: diameter * unit / 2 + 23 * k, fill: '#000' }));
+      }
+      top.append(mask);
+      for (const r of [INNER, OUTER]) {
+        top.append(el('circle', {
+          cx: px, cy: py, r: r * unit, fill: 'none', stroke: 'var(--field)', 'stroke-width': Math.max(2, 9.9 * k),
+          'stroke-dasharray': `${(3.3 * k).toFixed(2)} ${(36 * k).toFixed(2)}`, 'stroke-linecap': 'round', mask: `url(#${id})`,
+        }));
+      }
+      field.append(top);
+    }
+  }
+
+  const fields = document.querySelectorAll('[data-rings]');
+  if ('ResizeObserver' in window) {
+    const ro = new ResizeObserver(entries => entries.forEach(e => draw(e.target)));
+    fields.forEach(f => ro.observe(f));
+  } else {
+    fields.forEach(draw);
+  }
+})();
+
+// Film: the poster links to YouTube; with JS it plays in place
+(function () {
+  const film = document.querySelector('.film');
+  film.addEventListener('click', event => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey) return;
+    event.preventDefault();
+    const frame = document.createElement('iframe');
+    frame.src = `https://www.youtube-nocookie.com/embed/${film.dataset.yt}?autoplay=1&rel=0&playsinline=1`;
+    frame.title = 'Deck film';
+    frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+    frame.allowFullscreen = true;
+    const holder = document.createElement('div');
+    holder.className = 'film';
+    holder.append(frame);
+    film.replaceWith(holder);
+    frame.focus();
+  });
+})();
+
+// Timer: each stop shows its capture on its own tint
+(function () {
+  const section = document.getElementById('timer');
+  const shots = section.querySelectorAll('.phone.stack img');
+  section.addEventListener('change', event => {
+    const stop = event.target.value;
+    section.classList.remove('mint', 'amber', 'orange');
+    section.classList.add(stop);
+    shots.forEach(img => img.classList.toggle('on', img.dataset.stop === stop));
+  });
+})();
+
+// Pointer: the spotlight follows the cursor across the slide
+(function () {
+  const slide = document.getElementById('slide');
+  slide.addEventListener('pointermove', event => {
+    const r = slide.getBoundingClientRect();
+    slide.style.setProperty('--hx', (event.clientX - r.left - slide.clientLeft) + 'px');
+    slide.style.setProperty('--hy', (event.clientY - r.top - slide.clientTop) + 'px');
+  });
+})();
+
+// Copy the Homebrew commands
+document.querySelectorAll('[data-copy]').forEach(button => {
+  button.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(document.getElementById(button.dataset.copy).textContent);
+      button.textContent = 'Copied';
+    } catch (error) {
+      button.textContent = 'Press ⌘C';
+      getSelection().selectAllChildren(document.getElementById(button.dataset.copy));
+    }
+    setTimeout(() => { button.textContent = 'Copy'; }, 2000);
+  });
+});
+</script>
 </body>
 </html>
