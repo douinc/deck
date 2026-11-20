@@ -22,6 +22,13 @@ final class PointerService {
     /// - Returns: false if accessibility permission is missing
     @discardableResult
     func handle(_ message: PointerMessage) -> Bool {
+        // The overlay needs no permission, and "off" must always get through
+        if case .spotlight(let on) = message {
+            SpotlightOverlay.shared.setActive(on)
+            return true
+        }
+        SpotlightOverlay.shared.keepAlive()
+
         guard permissionService.hasAccessibilityPermission else { return false }
 
         switch message {
@@ -29,6 +36,8 @@ final class PointerService {
             move(dx: dx, dy: dy)
         case .click:
             click()
+        case .spotlight:
+            break
         }
         return true
     }

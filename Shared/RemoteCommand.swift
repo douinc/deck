@@ -33,6 +33,7 @@ enum RemoteCommand: String, Codable {
 enum PointerMessage: Equatable {
     case move(dx: Double, dy: Double)   // Relative cursor motion in points (y grows downward)
     case click                          // Left click at the current cursor position
+    case spotlight(Bool)                // Dim the Mac's screen around the cursor; re-sent as a heartbeat while on
 
     private static let prefix = "ptr:"
 
@@ -42,6 +43,8 @@ enum PointerMessage: Equatable {
             return String(format: "\(Self.prefix)m:%.1f,%.1f", dx, dy)
         case .click:
             return "\(Self.prefix)click"
+        case .spotlight(let on):
+            return "\(Self.prefix)spot:\(on ? 1 : 0)"
         }
     }
 
@@ -50,6 +53,10 @@ enum PointerMessage: Equatable {
         let body = wireString.dropFirst(Self.prefix.count)
         if body == "click" {
             self = .click
+            return
+        }
+        if body == "spot:1" || body == "spot:0" {
+            self = .spotlight(body == "spot:1")
             return
         }
         guard body.hasPrefix("m:") else { return nil }

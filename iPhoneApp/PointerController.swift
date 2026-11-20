@@ -15,6 +15,8 @@ final class PointerController: ObservableObject {
     var send: ((PointerMessage) -> Void)?
 
     static let sensitivityKey = "pointerSensitivity"
+    /// When on, holding the button also spotlights the cursor on the Mac
+    static let spotlightKey = "pointerSpotlight"
 
     // MARK: - Tuning
     private let updateInterval: TimeInterval = 1.0 / 60.0
@@ -27,6 +29,8 @@ final class PointerController: ObservableObject {
     private let motion = CMMotionManager()
     private var pressStart: Date?
     private var tracking = false
+    private var spotlight = false
+    private var framesSinceSpotlightPing = 0
     private var gain: Double = 1800
     private var smoothedYaw: Double = 0
     private var smoothedPitch: Double = 0
@@ -45,6 +49,7 @@ final class PointerController: ObservableObject {
 
         let stored = UserDefaults.standard.double(forKey: Self.sensitivityKey)
         gain = baseGain * (stored > 0 ? stored : 1.0)
+        spotlight = UserDefaults.standard.bool(forKey: Self.spotlightKey)
 
         clickHaptic.prepare()
         engageHaptic.prepare()
@@ -55,6 +60,7 @@ final class PointerController: ObservableObject {
         guard isActive else { return }
         isActive = false
         motion.stopDeviceMotionUpdates()
+        endSpotlight()
 
         if let start = pressStart, Date().timeIntervalSince(start) < tapThreshold {
             send?(.click)
@@ -68,6 +74,13 @@ final class PointerController: ObservableObject {
         isActive = false
         pressStart = nil
         motion.stopDeviceMotionUpdates()
+        endSpotlight()
+    }
+
+    private func endSpotlight() {
+        guard tracking, spotlight else { return }
+        tracking = false
+        send?(.spotlight(false))
     }
 
     // MARK: - Motion
@@ -89,7 +102,19 @@ final class PointerController: ObservableObject {
         guard Date().timeIntervalSince(start) >= tapThreshold else { return }
         if !tracking {
             tracking = true
+            framesSinceSpotlightPing = 0
             engageHaptic.impactOccurred()
+            if spotlight { send?(.spotlight(true)) }
+        }
+
+        // Heartbeat twice a second: the Mac lifts the spotlight on its own if
+        // these stop, so a dropped connection can't leave the screen dimmed.
+        if spotlight {
+            framesSinceSpotlightPing += 1
+            if framesSinceSpotlightPing >= 30 {
+                framesSinceSpotlightPing = 0
+                send?(.spotlight(true))
+            }
         }
 
         let w = data.rotationRate   // rad/s, device frame

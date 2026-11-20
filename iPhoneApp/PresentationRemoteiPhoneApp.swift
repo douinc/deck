@@ -624,6 +624,8 @@ struct RemoteTipsOverlay: View {
                         text: "Tap the **arrow below it** to go back.")
                 HintRow(icon: "cursorarrow.motionlines", tint: .white,
                         text: "**Hold** the pointer button and aim your iPhone to move the Mac's cursor. Tap it to click.")
+                HintRow(icon: "hand.draw", tint: .white,
+                        text: "**Touch and hold** any other button to rearrange the layout to fit your thumb.")
                 HintRow(icon: "timer", tint: .white,
                         text: "Press **▶︎** on the timer to track your talk. Your iPhone will gently buzz to keep you on time.")
                 HintRow(icon: "applewatch", tint: .white,
@@ -682,6 +684,7 @@ struct RemoteSettingsView: View {
     @ObservedObject var timer: PresentationTimer
     @AppStorage(Handedness.storageKey) private var hand: Handedness = .right
     @AppStorage(PointerController.sensitivityKey) private var pointerSensitivity = 1.0
+    @AppStorage(PointerController.spotlightKey) private var pointerSpotlight = false
     @AppStorage(ArcRemoteView.nextClicksKey) private var nextClicks = false
     @Environment(\.dismiss) var dismiss
 
@@ -713,6 +716,7 @@ struct RemoteSettingsView: View {
 
                 // Pointer
                 Section {
+                    Toggle("Spotlight", isOn: $pointerSpotlight)
                     Slider(value: $pointerSensitivity, in: 0.4...2.5) {
                         Text("Pointer Speed")
                     } minimumValueLabel: {
@@ -721,9 +725,9 @@ struct RemoteSettingsView: View {
                         Image(systemName: "hare")
                     }
                 } header: {
-                    Text("Pointer Speed")
+                    Text("Pointer")
                 } footer: {
-                    Text("Hold the pointer button and aim the phone to move the Mac cursor. Tap it to click.")
+                    Text("Hold the pointer button and aim the phone to move the Mac cursor. Tap it to click. Spotlight dims the Mac's screen around the cursor while you hold.")
                 }
 
                 // Vibration Toggle
