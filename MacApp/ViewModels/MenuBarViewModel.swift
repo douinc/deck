@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 import Combine
 import MultipeerConnectivity
 
@@ -15,6 +16,10 @@ final class MenuBarViewModel: ObservableObject {
     @Published private(set) var isListening: Bool = false
     @Published private(set) var hasAccessibilityPermission: Bool = false
     @Published private(set) var availableUpdate: String?
+    @Published private(set) var localNetworkDenied: Bool = false
+
+    /// The name iPhones see for this Mac, quoted in instructions.
+    let macDisplayName: String = Host.current().localizedName ?? "this Mac"
 
     // MARK: - Services
 
@@ -78,7 +83,7 @@ final class MenuBarViewModel: ObservableObject {
         connectionManager.$lastCommand
             .receive(on: DispatchQueue.main)
             .map { command in
-                command?.rawValue
+                command.map(Self.friendlyName)
             }
             .assign(to: &$lastCommandText)
 
@@ -86,6 +91,11 @@ final class MenuBarViewModel: ObservableObject {
         permissionService.$hasAccessibilityPermission
             .receive(on: DispatchQueue.main)
             .assign(to: &$hasAccessibilityPermission)
+
+        // Local Network privacy (macOS 15+)
+        connectionManager.$localNetworkDenied
+            .receive(on: DispatchQueue.main)
+            .assign(to: &$localNetworkDenied)
 
         // Available update
         updateChecker.$availableUpdate
@@ -96,6 +106,17 @@ final class MenuBarViewModel: ObservableObject {
     private func setupCommandHandler() {
         connectionManager.onCommandReceived = { [weak self] command in
             self?.keystrokeService.sendCommand(command)
+        }
+    }
+
+    private static func friendlyName(_ command: RemoteCommand) -> String {
+        switch command {
+        case .nextSlide: return "Next slide ▶"
+        case .previousSlide: return "◀ Previous slide"
+        case .startPresentation: return "Start slideshow"
+        case .endPresentation: return "End slideshow"
+        case .blackScreen: return "Black screen"
+        case .keepalive, .keepaliveAck: return "—"
         }
     }
 
@@ -124,6 +145,12 @@ final class MenuBarViewModel: ObservableObject {
         permissionService.requestPermission()
     }
 
+    /// Opens System Settings › Privacy & Security › Local Network.
+    func openLocalNetworkSettings() {
+        let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_LocalNetwork")!
+        NSWorkspace.shared.open(url)
+    }
+
     // MARK: - Debug Methods
 
     func testPrevious() {
@@ -135,14 +162,7 @@ final class MenuBarViewModel: ObservableObject {
     }
 
     func restartApp() {
-        let url = Bundle.main.bundleURL
-        let configuration = NSWorkspace.OpenConfiguration()
-        configuration.createsNewApplicationInstance = true
-        NSWorkspace.shared.openApplication(at: url, configuration: configuration) { _, _ in
-            DispatchQueue.main.async {
-                NSApplication.shared.terminate(nil)
-            }
-        }
+        AppRelauncher.relaunch()
     }
 
     func quit() {

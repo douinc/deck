@@ -19,6 +19,26 @@ class iPhoneConnectionManager: NSObject, ObservableObject {
     @Published var browserState: String = "None"
     @Published var lastError: String?
 
+    // MARK: - Discovery Diagnostics
+    /// True when iOS has denied Deck Local Network access. Discovery can never
+    /// succeed in that state, so the UI shows a "turn it on in Settings" card.
+    @Published private(set) var localNetworkDenied = false
+    /// True once we've searched for a while without finding any Mac, so the UI
+    /// can proactively show troubleshooting steps instead of spinning forever.
+    @Published private(set) var isSearchTakingLong = false
+
+    // MARK: - User-Facing Connection Progress
+    /// Name of the Mac we're currently trying to connect to (invite in flight).
+    @Published private(set) var connectingMacName: String?
+    /// Name of the Mac whose last connection attempt failed, so the UI can
+    /// explain what to check instead of silently going back to "Searching".
+    @Published private(set) var failedMacName: String?
+
+    /// UserDefaults key shared with the onboarding flow. Discovery (and so the
+    /// system Local Network prompt) waits until onboarding has explained it.
+    static let onboardingCompletedKey = "hasCompletedOnboarding"
+    private var discoveryEnabled = false
+
     struct DebugLogEntry: Identifiable {
         let id = UUID()
         let timestamp: Date
@@ -63,6 +83,20 @@ class iPhoneConnectionManager: NSObject, ObservableObject {
     private var watchdogTimer: Timer?
     private var lastReceivedTime = Date()
     private let staleTimeout: TimeInterval = 15.0  // ~5 missed 3s keepalives
+
+    // MARK: - Discovery Refresh
+    // A browser started before the user answers the Local Network prompt (we
+    // start browsing at launch, so this is exactly the first-run case), or one
+    // that survived a network change / backgrounding, often never reports any
+    // peers until it is restarted. While we're disconnected and see no Macs we
+    // periodically recreate it.
+    private let localNetworkMonitor = LocalNetworkPermissionMonitor()
+    private var cancellables = Set<AnyCancellable>()
+    private var discoveryTimer: Timer?
+    private var lastBrowserStart = Date()
+    private var searchStartedAt = Date()
+    private let browserRefreshInterval: TimeInterval = 12.0
+    private let searchTakingLongThreshold: TimeInterval = 10.0
 
     // MARK: - Haptic Feedback
     private let feedbackGenerator = UIImpactFeedbackGenerator(style: .medium)
@@ -117,7 +151,103 @@ class iPhoneConnectionManager: NSObject, ObservableObject {
         setupSession()
         setupWatchConnectivity()
         feedbackGenerator.prepare()
+        setupLocalNetworkMonitor()
+        if UserDefaults.standard.bool(forKey: Self.onboardingCompletedKey) {
+            beginDiscovery()
+        }
+    }
+
+    /// Starts looking for Macs. Called at launch for returning users, or at the
+    /// end of onboarding so the Local Network prompt appears right after we've
+    /// explained why Deck needs it.
+    func beginDiscovery() {
+        guard !discoveryEnabled else { return }
+        discoveryEnabled = true
+        searchStartedAt = Date()
         startBrowsing()
+        startDiscoveryTimer()
+    }
+
+    /// Clears a failed attempt and tries the same Mac again (or goes back to
+    /// searching if it's no longer visible).
+    func retryFailedConnection() {
+        let name = failedMacName
+        failedMacName = nil
+        if let name, let mac = availableMacs.first(where: { $0.displayName == name }) {
+            connectTo(mac)
+        } else {
+            restartBrowser(reason: "user retry")
+        }
+    }
+
+    /// Abandons an in-flight connection attempt and returns to the Mac list.
+    func cancelConnecting() {
+        disconnect()
+        connectingMacName = nil
+        failedMacName = nil
+    }
+
+    private func setupLocalNetworkMonitor() {
+        localNetworkMonitor.$isDenied
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] denied in
+                guard let self = self else { return }
+                self.localNetworkDenied = denied
+                if denied {
+                    self.debugLog("Local Network access is denied — cannot discover Macs", level: .error)
+                    self.lastError = "Local Network access denied"
+                }
+            }
+            .store(in: &cancellables)
+    }
+
+    // MARK: - Discovery Refresh
+    private func startDiscoveryTimer() {
+        discoveryTimer?.invalidate()
+        discoveryTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
+            self?.checkDiscoveryProgress()
+        }
+    }
+
+    private func checkDiscoveryProgress() {
+        guard !isConnected else {
+            searchStartedAt = Date()
+            if isSearchTakingLong { isSearchTakingLong = false }
+            return
+        }
+        guard availableMacs.isEmpty else {
+            searchStartedAt = Date()
+            if isSearchTakingLong { isSearchTakingLong = false }
+            return
+        }
+
+        let now = Date()
+        if !isSearchTakingLong && now.timeIntervalSince(searchStartedAt) > searchTakingLongThreshold {
+            isSearchTakingLong = true
+            debugLog("No Mac found after \(Int(searchTakingLongThreshold))s of searching", level: .warning)
+        }
+        if !isInviting && now.timeIntervalSince(lastBrowserStart) > browserRefreshInterval {
+            restartBrowser(reason: "no Macs found")
+        }
+    }
+
+    /// Tears down and recreates the Bonjour browser (and re-probes Local
+    /// Network access). Peers found by the old browser may be stale, so the
+    /// list is cleared; live Macs reappear within a second or two.
+    private func restartBrowser(reason: String) {
+        debugLog("Restarting browser (\(reason))", level: .network)
+        stopBrowsing()
+        availableMacs.removeAll()
+        startBrowsing()
+    }
+
+    /// Call when the app returns to the foreground. This is also how we recover
+    /// on first launch: the Local Network permission alert makes the scene
+    /// inactive, and dismissing it makes it active again.
+    func handleAppBecameActive() {
+        guard discoveryEnabled, !isConnected, !isInviting else { return }
+        restartBrowser(reason: "app became active")
     }
 
     private func setupWatchConnectivity() {
@@ -160,21 +290,31 @@ class iPhoneConnectionManager: NSObject, ObservableObject {
     // MARK: - Public Methods
     func startBrowsing() {
         debugLog("Starting browser for service: \(RemoteServiceConfig.serviceType)", level: .network)
+        // Never run two browsers at once (e.g. disconnect() restarting browsing
+        // while one is already active) — both would deliver duplicate callbacks.
+        browser?.delegate = nil
+        browser?.stopBrowsingForPeers()
         browser = MCNearbyServiceBrowser(
             peer: myPeerID,
             serviceType: RemoteServiceConfig.serviceType
         )
         browser?.delegate = self
         browser?.startBrowsingForPeers()
+        lastBrowserStart = Date()
+        localNetworkMonitor.start()
 
         isSearching = true
         browserState = "Browsing for: \(RemoteServiceConfig.serviceType)"
-        statusMessage = "Searching for Mac..."
+        // Don't clobber "Reconnecting to …" while auto-reconnect is pending.
+        if !isConnected && lastConnectedMacName == nil {
+            statusMessage = "Searching for Mac..."
+        }
         debugLog("Browser started successfully", level: .success)
     }
 
     func stopBrowsing() {
         debugLog("Stopping browser", level: .network)
+        browser?.delegate = nil
         browser?.stopBrowsingForPeers()
         browser = nil
         isSearching = false
@@ -298,9 +438,18 @@ class iPhoneConnectionManager: NSObject, ObservableObject {
         // Backstop just past the invite timeout, in case the invitation fails
         // silently without a `.notConnected` callback to clear the flag.
         inviteGuardTimer = Timer.scheduledTimer(withTimeInterval: 16.0, repeats: false) { [weak self] _ in
-            self?.isInviting = false
+            guard let self = self else { return }
+            self.isInviting = false
+            // The invite died without a callback: tell the user instead of
+            // leaving them on "Connecting…" forever.
+            if !self.isConnected, let name = self.connectingMacName {
+                self.connectingMacName = nil
+                self.failedMacName = name
+            }
         }
 
+        failedMacName = nil
+        connectingMacName = peer.displayName
         debugLog("Inviting peer: \(peer.displayName) (timeout: 15s)", level: .network)
         browser.invitePeer(peer, to: session, withContext: nil, timeout: 15)
         statusMessage = "Connecting to \(peer.displayName)..."
@@ -316,6 +465,7 @@ class iPhoneConnectionManager: NSObject, ObservableObject {
         inviteGuardTimer?.invalidate()
         inviteGuardTimer = nil
         isInviting = false
+        connectingMacName = nil
         stopKeepalive()
         stopWatchdog()
         session?.disconnect()
@@ -373,6 +523,8 @@ extension iPhoneConnectionManager: MCSessionDelegate {
                 self.isInviting = false
                 self.inviteGuardTimer?.invalidate()
                 self.inviteGuardTimer = nil
+                self.connectingMacName = nil
+                self.failedMacName = nil
                 self.startKeepalive()
                 self.startWatchdog()
                 self.updateWatchWithConnectionStatus()
@@ -388,9 +540,18 @@ extension iPhoneConnectionManager: MCSessionDelegate {
             case .notConnected:
                 self.debugLog("SESSION STATE: Not connected (was: \(peerID.displayName))", level: .warning)
                 self.sessionState = "Not connected"
+                let wasInvitingThisMac = self.connectingMacName == peerID.displayName
                 self.isInviting = false
                 self.inviteGuardTimer?.invalidate()
                 self.inviteGuardTimer = nil
+                if wasInvitingThisMac && !self.isConnected {
+                    self.connectingMacName = nil
+                    // First-time connection failed: surface it with guidance.
+                    // (Auto-reconnects to a known Mac keep retrying quietly.)
+                    if self.lastConnectedMacName == nil {
+                        self.failedMacName = peerID.displayName
+                    }
+                }
                 if self.connectedMac == peerID || self.lastConnectedMacName == peerID.displayName {
                     self.connectedMac = nil
                     self.isConnected = false
@@ -434,7 +595,14 @@ extension iPhoneConnectionManager: MCNearbyServiceBrowserDelegate {
     func browser(_ browser: MCNearbyServiceBrowser, foundPeer peerID: MCPeerID, withDiscoveryInfo info: [String : String]?) {
         debugLog("BROWSER: Found peer '\(peerID.displayName)' info: \(info ?? [:])", level: .success)
         DispatchQueue.main.async {
-            if !self.availableMacs.contains(peerID) {
+            // Ignore late callbacks from a browser we've since replaced.
+            guard browser === self.browser else { return }
+            if let index = self.availableMacs.firstIndex(where: { $0.displayName == peerID.displayName }) {
+                // Same Mac re-advertised (e.g. after relaunch). Keep only the
+                // newest peer so the list never shows a stale duplicate that
+                // would time out when tapped.
+                self.availableMacs[index] = peerID
+            } else {
                 self.availableMacs.append(peerID)
                 self.debugLog("Added '\(peerID.displayName)' to available Macs (total: \(self.availableMacs.count))", level: .info)
             }
@@ -451,6 +619,7 @@ extension iPhoneConnectionManager: MCNearbyServiceBrowserDelegate {
     func browser(_ browser: MCNearbyServiceBrowser, lostPeer peerID: MCPeerID) {
         debugLog("BROWSER: Lost peer '\(peerID.displayName)'", level: .warning)
         DispatchQueue.main.async {
+            guard browser === self.browser else { return }
             self.availableMacs.removeAll { $0 == peerID }
         }
     }

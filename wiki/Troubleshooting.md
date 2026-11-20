@@ -8,12 +8,22 @@ Common issues and their solutions.
 
 **Symptoms**: iPhone doesn't see the Mac in the device list
 
+The Mac advertises as soon as Deck launches, whether or not Accessibility
+is granted or onboarding is finished. Accessibility only controls whether
+received commands turn into keystrokes. The iPhone restarts discovery when it
+returns to the foreground, and every ~12s while no Mac is visible. After ~10s
+with nothing found, it expands its setup steps automatically.
+
 **Solutions**:
 
-1. **Same Network**: Ensure both devices are on the same WiFi network
-2. **Restart Apps**: Quit and relaunch both apps
-3. **Check Firewall**: Disable macOS firewall temporarily to test
-4. **Bonjour Services**: Verify Info.plist has correct Bonjour entries:
+1. **Mac app running**: Click the Deck menu bar icon. It should say "Waiting for iPhone to connect...". If it says "Stopped", choose **Start Listening**.
+2. **Local Network permission (iPhone)**: Settings → Deck → Local Network must be on. The iPhone app shows an orange "Local Network access is off" card when it detects a denial.
+3. **Local Network permission (Mac, macOS 15+)**: System Settings → Privacy & Security → Local Network → enable Deck. The menu bar shows "⚠️ Allow Local Network Access…" when it detects a denial.
+4. **Same Network**: Ensure both devices are on the same WiFi network (or the Mac is on the iPhone's hotspot). Guest/public networks with client isolation block Bonjour.
+5. **Disable VPN**: VPNs can hide the local network from discovery
+6. **Restart Apps**: Quit and relaunch both apps
+7. **Check Firewall**: Disable macOS firewall temporarily to test
+8. **Bonjour Services**: Verify Info.plist has correct Bonjour entries:
    ```xml
    <key>NSBonjourServices</key>
    <array>

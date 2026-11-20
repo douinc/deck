@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 import MultipeerConnectivity
 import Combine
 
@@ -16,6 +17,13 @@ class MacConnectionManager: NSObject, ObservableObject {
     @Published var sessionState: String = "None"
     @Published var advertiserState: String = "None"
     @Published var lastError: String?
+
+    // MARK: - Local Network Privacy (macOS 15+)
+    /// True when macOS has denied Deck Local Network access. In that state the
+    /// iPhone can never discover this Mac, so the menu bar surfaces a fix.
+    @Published private(set) var localNetworkDenied = false
+    private let localNetworkMonitor = LocalNetworkPermissionMonitor()
+    private var cancellables = Set<AnyCancellable>()
 
     struct DebugLogEntry: Identifiable {
         let id = UUID()
@@ -36,6 +44,11 @@ class MacConnectionManager: NSObject, ObservableObject {
     private let myPeerID: MCPeerID
     private var session: MCSession?
     private var advertiser: MCNearbyServiceAdvertiser?
+
+    /// Set when the user explicitly chooses "Stop Listening". While set we never
+    /// restart advertising on our own (reconnects, wake from sleep, retries).
+    private var userStoppedAdvertising = false
+    private var advertiseRetryWorkItem: DispatchWorkItem?
 
     // MARK: - Connection Health Watchdog
     // MultipeerConnectivity can keep reporting `.connected` long after the
@@ -88,6 +101,47 @@ class MacConnectionManager: NSObject, ObservableObject {
         super.init()
         debugLog("Initializing with peer ID: \(myPeerID.displayName)", level: .info)
         setupSession()
+        setupLocalNetworkMonitor()
+        observeSystemWake()
+    }
+
+    deinit {
+        NSWorkspace.shared.notificationCenter.removeObserver(self)
+    }
+
+    private func setupLocalNetworkMonitor() {
+        localNetworkMonitor.$isDenied
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] denied in
+                guard let self = self else { return }
+                self.localNetworkDenied = denied
+                if denied {
+                    self.debugLog("Local Network access is denied — iPhone cannot discover this Mac", level: .error)
+                    self.lastError = "Local Network access denied"
+                }
+            }
+            .store(in: &cancellables)
+    }
+
+    /// Bonjour advertisements frequently go stale across sleep/wake and network
+    /// changes, leaving the Mac invisible until the app is relaunched. Restart
+    /// the advertiser whenever the Mac wakes up.
+    private func observeSystemWake() {
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self,
+            selector: #selector(systemDidWake),
+            name: NSWorkspace.didWakeNotification,
+            object: nil
+        )
+    }
+
+    @objc private func systemDidWake() {
+        DispatchQueue.main.async {
+            guard self.isAdvertising, !self.userStoppedAdvertising else { return }
+            self.debugLog("System woke from sleep, restarting advertiser", level: .network)
+            self.startAdvertising()
+        }
     }
     
     private func setupSession() {
@@ -103,8 +157,16 @@ class MacConnectionManager: NSObject, ObservableObject {
     }
 
     // MARK: - Public Methods
+    /// Starts advertising so iPhones can discover this Mac. Safe to call
+    /// repeatedly: any existing advertiser is torn down first, so we never end
+    /// up with two advertisers for the same peer.
     func startAdvertising() {
         debugLog("Starting advertiser for service: \(RemoteServiceConfig.serviceType)", level: .network)
+        userStoppedAdvertising = false
+        advertiseRetryWorkItem?.cancel()
+        advertiseRetryWorkItem = nil
+        advertiser?.delegate = nil
+        advertiser?.stopAdvertisingPeer()
         advertiser = MCNearbyServiceAdvertiser(
             peer: myPeerID,
             discoveryInfo: nil,
@@ -115,12 +177,24 @@ class MacConnectionManager: NSObject, ObservableObject {
 
         isAdvertising = true
         advertiserState = "Advertising: \(RemoteServiceConfig.serviceType)"
-        statusMessage = "Waiting for iPhone to connect..."
+        if connectedDevices.isEmpty {
+            statusMessage = "Waiting for iPhone to connect..."
+        }
         debugLog("Advertiser started successfully", level: .success)
+
+        // Re-probe Local Network access (this also triggers the macOS 15+
+        // permission prompt on first launch, while the user is at the Mac).
+        localNetworkMonitor.start()
     }
 
     func stopAdvertising(userInitiated: Bool = false) {
         debugLog("Stopping advertiser (userInitiated: \(userInitiated))", level: .network)
+        if userInitiated {
+            userStoppedAdvertising = true
+        }
+        advertiseRetryWorkItem?.cancel()
+        advertiseRetryWorkItem = nil
+        advertiser?.delegate = nil
         advertiser?.stopAdvertisingPeer()
         advertiser = nil
         isAdvertising = false
@@ -205,7 +279,7 @@ extension MacConnectionManager: MCSessionDelegate {
                     // clean session instead of this half-dead one.
                     self.recreateSession()
                     self.statusMessage = "Waiting for iPhone to reconnect..."
-                    if self.advertiser == nil {
+                    if self.advertiser == nil && !self.userStoppedAdvertising {
                         self.debugLog("Re-starting advertiser for reconnection", level: .network)
                         self.startAdvertising()
                     }
@@ -270,6 +344,18 @@ extension MacConnectionManager: MCNearbyServiceAdvertiserDelegate {
             self.advertiserState = "Error: \(error.localizedDescription)"
             self.lastError = error.localizedDescription
             self.statusMessage = "Error: \(error.localizedDescription)"
+
+            // Advertising can fail transiently (e.g. no network yet at login).
+            // Retry instead of leaving the Mac permanently invisible.
+            guard !self.userStoppedAdvertising else { return }
+            self.advertiseRetryWorkItem?.cancel()
+            let retry = DispatchWorkItem { [weak self] in
+                guard let self = self, !self.userStoppedAdvertising else { return }
+                self.debugLog("Retrying advertiser after failure", level: .network)
+                self.startAdvertising()
+            }
+            self.advertiseRetryWorkItem = retry
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5.0, execute: retry)
         }
     }
 }
