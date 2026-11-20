@@ -34,7 +34,8 @@ final class AppCoordinator: ObservableObject {
     lazy var welcomeViewModel: WelcomeViewModel = {
         let viewModel = WelcomeViewModel(
             permissionService: permissionService,
-            preferences: preferences
+            preferences: preferences,
+            connectionManager: connectionManager
         )
         viewModel.onComplete = { [weak self] in
             self?.handleOnboardingComplete()
@@ -79,10 +80,40 @@ final class AppCoordinator: ObservableObject {
         // already prompts for it.
         startListening()
 
+        // Watch for Accessibility being turned on — from the setup guide, the
+        // menu bar "Fix" item, or System Settings directly — and relaunch Deck
+        // automatically, because macOS only applies the grant to a new process.
+        permissionService.permissionGranted
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in self?.relaunchAfterPermissionGranted() }
+            .store(in: &cancellables)
+        if !permissionService.hasAccessibilityPermission {
+            permissionService.startPolling()
+        }
+
         if !preferences.hasCompletedOnboarding {
-            // First launch - show welcome window
+            // First launch - show welcome window. If we're back from the
+            // automatic relaunch, skip ahead past the permission step.
+            if permissionService.hasAccessibilityPermission {
+                welcomeViewModel.restart()
+            }
             showWelcome = true
         }
+    }
+
+    /// Gives the setup guide a moment to show "Allowed — reopening Deck…",
+    /// then relaunches.
+    private func relaunchAfterPermissionGranted() {
+        print("Accessibility granted — relaunching Deck so it takes effect")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            AppRelauncher.relaunch()
+        }
+    }
+
+    /// Reopens the setup guide from the menu bar.
+    func showSetupGuide() {
+        welcomeViewModel.restart()
+        showWelcome = true
     }
 
     /// Called when onboarding is completed

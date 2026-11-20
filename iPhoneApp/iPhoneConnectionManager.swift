@@ -27,6 +27,18 @@ class iPhoneConnectionManager: NSObject, ObservableObject {
     /// can proactively show troubleshooting steps instead of spinning forever.
     @Published private(set) var isSearchTakingLong = false
 
+    // MARK: - User-Facing Connection Progress
+    /// Name of the Mac we're currently trying to connect to (invite in flight).
+    @Published private(set) var connectingMacName: String?
+    /// Name of the Mac whose last connection attempt failed, so the UI can
+    /// explain what to check instead of silently going back to "Searching".
+    @Published private(set) var failedMacName: String?
+
+    /// UserDefaults key shared with the onboarding flow. Discovery (and so the
+    /// system Local Network prompt) waits until onboarding has explained it.
+    static let onboardingCompletedKey = "hasCompletedOnboarding"
+    private var discoveryEnabled = false
+
     struct DebugLogEntry: Identifiable {
         let id = UUID()
         let timestamp: Date
@@ -140,8 +152,39 @@ class iPhoneConnectionManager: NSObject, ObservableObject {
         setupWatchConnectivity()
         feedbackGenerator.prepare()
         setupLocalNetworkMonitor()
+        if UserDefaults.standard.bool(forKey: Self.onboardingCompletedKey) {
+            beginDiscovery()
+        }
+    }
+
+    /// Starts looking for Macs. Called at launch for returning users, or at the
+    /// end of onboarding so the Local Network prompt appears right after we've
+    /// explained why Deck needs it.
+    func beginDiscovery() {
+        guard !discoveryEnabled else { return }
+        discoveryEnabled = true
+        searchStartedAt = Date()
         startBrowsing()
         startDiscoveryTimer()
+    }
+
+    /// Clears a failed attempt and tries the same Mac again (or goes back to
+    /// searching if it's no longer visible).
+    func retryFailedConnection() {
+        let name = failedMacName
+        failedMacName = nil
+        if let name, let mac = availableMacs.first(where: { $0.displayName == name }) {
+            connectTo(mac)
+        } else {
+            restartBrowser(reason: "user retry")
+        }
+    }
+
+    /// Abandons an in-flight connection attempt and returns to the Mac list.
+    func cancelConnecting() {
+        disconnect()
+        connectingMacName = nil
+        failedMacName = nil
     }
 
     private func setupLocalNetworkMonitor() {
@@ -203,7 +246,7 @@ class iPhoneConnectionManager: NSObject, ObservableObject {
     /// on first launch: the Local Network permission alert makes the scene
     /// inactive, and dismissing it makes it active again.
     func handleAppBecameActive() {
-        guard !isConnected, !isInviting else { return }
+        guard discoveryEnabled, !isConnected, !isInviting else { return }
         restartBrowser(reason: "app became active")
     }
 
@@ -395,9 +438,18 @@ class iPhoneConnectionManager: NSObject, ObservableObject {
         // Backstop just past the invite timeout, in case the invitation fails
         // silently without a `.notConnected` callback to clear the flag.
         inviteGuardTimer = Timer.scheduledTimer(withTimeInterval: 16.0, repeats: false) { [weak self] _ in
-            self?.isInviting = false
+            guard let self = self else { return }
+            self.isInviting = false
+            // The invite died without a callback: tell the user instead of
+            // leaving them on "Connecting…" forever.
+            if !self.isConnected, let name = self.connectingMacName {
+                self.connectingMacName = nil
+                self.failedMacName = name
+            }
         }
 
+        failedMacName = nil
+        connectingMacName = peer.displayName
         debugLog("Inviting peer: \(peer.displayName) (timeout: 15s)", level: .network)
         browser.invitePeer(peer, to: session, withContext: nil, timeout: 15)
         statusMessage = "Connecting to \(peer.displayName)..."
@@ -413,6 +465,7 @@ class iPhoneConnectionManager: NSObject, ObservableObject {
         inviteGuardTimer?.invalidate()
         inviteGuardTimer = nil
         isInviting = false
+        connectingMacName = nil
         stopKeepalive()
         stopWatchdog()
         session?.disconnect()
@@ -470,6 +523,8 @@ extension iPhoneConnectionManager: MCSessionDelegate {
                 self.isInviting = false
                 self.inviteGuardTimer?.invalidate()
                 self.inviteGuardTimer = nil
+                self.connectingMacName = nil
+                self.failedMacName = nil
                 self.startKeepalive()
                 self.startWatchdog()
                 self.updateWatchWithConnectionStatus()
@@ -485,9 +540,18 @@ extension iPhoneConnectionManager: MCSessionDelegate {
             case .notConnected:
                 self.debugLog("SESSION STATE: Not connected (was: \(peerID.displayName))", level: .warning)
                 self.sessionState = "Not connected"
+                let wasInvitingThisMac = self.connectingMacName == peerID.displayName
                 self.isInviting = false
                 self.inviteGuardTimer?.invalidate()
                 self.inviteGuardTimer = nil
+                if wasInvitingThisMac && !self.isConnected {
+                    self.connectingMacName = nil
+                    // First-time connection failed: surface it with guidance.
+                    // (Auto-reconnects to a known Mac keep retrying quietly.)
+                    if self.lastConnectedMacName == nil {
+                        self.failedMacName = peerID.displayName
+                    }
+                }
                 if self.connectedMac == peerID || self.lastConnectedMacName == peerID.displayName {
                     self.connectedMac = nil
                     self.isConnected = false

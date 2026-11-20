@@ -4,6 +4,8 @@ struct SettingsView: View {
     @EnvironmentObject var gestureManager: GestureManager
     @AppStorage("gestureMode") private var gestureMode = "doubleTap"
     @AppStorage("invertCrown") private var invertCrown = false
+    @AppStorage("hasSeenWatchTips") private var hasSeenWatchTips = false
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         List {
@@ -16,8 +18,8 @@ struct SettingsView: View {
                 }
             } footer: {
                 Text(gestureMode == "doubleTap"
-                     ? "Double-tap gesture triggers next slide (watchOS 11+, Series 9+)."
-                     : "Flick your wrist to navigate slides hands-free.")
+                     ? "Tap your finger and thumb together twice for the next slide (Series 9 or newer)."
+                     : "Flick your wrist forward for next, backward for previous.")
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
             }
@@ -29,7 +31,7 @@ struct SettingsView: View {
                             .font(.system(size: 15))
                     }
                 } footer: {
-                    Text("After a gesture, lock out further gestures for 3 seconds to prevent accidental triggers.")
+                    Text("Wait 3 seconds between flicks so you don’t skip slides by accident.")
                         .font(.system(size: 11))
                         .foregroundColor(.secondary)
                 }
@@ -40,7 +42,7 @@ struct SettingsView: View {
                             .font(.system(size: 15))
                     }
                 } footer: {
-                    Text("Disable previous slide gesture. Only forward flicks will be recognized.")
+                    Text("Only move forward. Backward flicks are ignored.")
                         .font(.system(size: 11))
                         .foregroundColor(.secondary)
                 }
@@ -64,7 +66,7 @@ struct SettingsView: View {
                             .font(.system(size: 15))
                     }
                 } footer: {
-                    Text("Gestures enable on wrist raise and disable on wrist lower.")
+                    Text("Flicks turn on when you raise your wrist and off when you lower it.")
                         .font(.system(size: 11))
                         .foregroundColor(.secondary)
                 }
@@ -79,6 +81,20 @@ struct SettingsView: View {
                 Text(invertCrown
                      ? "Crown clockwise = previous slide, counterclockwise = next slide."
                      : "Crown clockwise = next slide, counterclockwise = previous slide.")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+            }
+
+            Section {
+                Button {
+                    hasSeenWatchTips = false
+                    dismiss()
+                } label: {
+                    Label("Show Tips", systemImage: "lightbulb")
+                        .font(.system(size: 15))
+                }
+            } footer: {
+                Text("See how to change slides from your watch again.")
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
             }

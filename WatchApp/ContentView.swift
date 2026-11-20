@@ -13,6 +13,8 @@ struct ContentView: View {
     @State private var crownOffset: Double = 0
     @State private var lastCrownDetent: Int = 0
     @AppStorage("invertCrown") private var invertCrown = false
+    @AppStorage("hasSeenWatchTips") private var hasSeenWatchTips = false
+    @State private var showControlsAnyway = false
 
     private var isFlickMode: Bool { gestureMode == "flickWrist" }
 
@@ -31,6 +33,16 @@ struct ContentView: View {
     }
 
     var body: some View {
+        if !hasSeenWatchTips {
+            WatchTipsView { hasSeenWatchTips = true }
+        } else if !connectionManager.isConnectedToMac && !showControlsAnyway {
+            WatchConnectGuideView { showControlsAnyway = true }
+        } else {
+            controls
+        }
+    }
+
+    private var controls: some View {
         TimelineView(.periodic(from: .now, by: 1.0)) { context in
             GeometryReader { geometry in
                 if isFlickMode {

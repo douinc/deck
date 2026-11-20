@@ -123,8 +123,14 @@ class WatchConnectionManager: NSObject, ObservableObject {
 extension WatchConnectionManager: WCSessionDelegate {
 
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
+        // Pick up the last status the iPhone sent, so a freshly launched watch
+        // app doesn't wrongly show "not connected" until the next update.
+        let lastKnownConnected = session.receivedApplicationContext["connectedToMac"] as? Bool
         DispatchQueue.main.async {
             self.isReachable = session.isReachable
+            if let lastKnownConnected {
+                self.isConnectedToMac = lastKnownConnected
+            }
         }
 
         if let error = error {

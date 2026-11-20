@@ -10,6 +10,11 @@ final class PermissionService: ObservableObject {
     // MARK: - Published Properties
     @Published private(set) var hasAccessibilityPermission: Bool = false
 
+    /// Fires when permission flips from denied to granted while Deck is running.
+    /// Deck must relaunch for the grant to take effect (see AppRelauncher).
+    let permissionGranted = PassthroughSubject<Void, Never>()
+    private var hasCompletedInitialCheck = false
+
     // MARK: - Private Properties
     private var pollingTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
@@ -31,9 +36,17 @@ final class PermissionService: ObservableObject {
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false]
         let hasPermission = AXIsProcessTrustedWithOptions(options as CFDictionary)
 
-        if hasPermission != hasAccessibilityPermission {
+        let wasGranted = hasAccessibilityPermission
+        if hasPermission != wasGranted {
             hasAccessibilityPermission = hasPermission
         }
+        // Permission already on at launch is not a "grant" — only a change
+        // observed while running is, which is what avoids a relaunch loop.
+        if hasCompletedInitialCheck && hasPermission && !wasGranted {
+            stopPolling()
+            permissionGranted.send()
+        }
+        hasCompletedInitialCheck = true
 
         return hasPermission
     }
@@ -50,7 +63,7 @@ final class PermissionService: ObservableObject {
         NSWorkspace.shared.open(url)
     }
 
-    /// Starts polling for permission changes (useful during onboarding)
+    /// Polls for permission changes until permission is granted.
     func startPolling(interval: TimeInterval = 1.0) {
         stopPolling()
 

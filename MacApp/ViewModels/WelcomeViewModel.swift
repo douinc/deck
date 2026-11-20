@@ -11,12 +11,14 @@ final class WelcomeViewModel: ObservableObject {
     enum WelcomeStep: Int, CaseIterable {
         case introduction
         case accessibilityPermission
+        case connectiPhone
         case complete
 
         var title: String {
             switch self {
             case .introduction: return "Welcome"
-            case .accessibilityPermission: return "Permission Required"
+            case .accessibilityPermission: return "Allow Deck"
+            case .connectiPhone: return "Connect iPhone"
             case .complete: return "All Set!"
             }
         }
@@ -28,11 +30,17 @@ final class WelcomeViewModel: ObservableObject {
     @Published private(set) var canProceed: Bool = true
     @Published private(set) var hasPermission: Bool = false
     @Published private(set) var needsRestart: Bool = false
+    @Published private(set) var connectedDeviceName: String?
+    @Published private(set) var localNetworkDenied: Bool = false
+
+    /// The name the iPhone shows for this Mac, so instructions can quote it.
+    let macDisplayName: String = Host.current().localizedName ?? "your Mac"
 
     // MARK: - Services
 
     let permissionService: PermissionService
     let preferences: PreferencesManager
+    let connectionManager: MacConnectionManager?
 
     // MARK: - Callbacks
 
@@ -46,10 +54,12 @@ final class WelcomeViewModel: ObservableObject {
 
     init(
         permissionService: PermissionService = .shared,
-        preferences: PreferencesManager = .shared
+        preferences: PreferencesManager = .shared,
+        connectionManager: MacConnectionManager? = nil
     ) {
         self.permissionService = permissionService
         self.preferences = preferences
+        self.connectionManager = connectionManager
 
         setupBindings()
     }
@@ -72,6 +82,16 @@ final class WelcomeViewModel: ObservableObject {
                 self.updateCanProceed()
             }
             .store(in: &cancellables)
+
+        // Live iPhone connection status for the "Connect your iPhone" step
+        connectionManager?.$connectedDevices
+            .receive(on: DispatchQueue.main)
+            .map { $0.first?.displayName }
+            .assign(to: &$connectedDeviceName)
+
+        connectionManager?.$localNetworkDenied
+            .receive(on: DispatchQueue.main)
+            .assign(to: &$localNetworkDenied)
     }
 
     private func updateCanProceed() {
@@ -80,6 +100,9 @@ final class WelcomeViewModel: ObservableObject {
             canProceed = true
         case .accessibilityPermission:
             canProceed = hasPermission
+        case .connectiPhone:
+            // Never block on the phone: people may set it up later.
+            canProceed = true
         case .complete:
             canProceed = true
         }
@@ -98,7 +121,7 @@ final class WelcomeViewModel: ObservableObject {
         updateCanProceed()
 
         // Start permission polling when entering permission step
-        if currentStep == .accessibilityPermission {
+        if currentStep == .accessibilityPermission && !hasPermission {
             permissionService.startPolling()
         }
     }
@@ -114,6 +137,17 @@ final class WelcomeViewModel: ObservableObject {
         updateCanProceed()
     }
 
+    /// Restarts the guide from the first step (used by "Setup Guide…").
+    func restart() {
+        currentStep = hasPermission ? .connectiPhone : .introduction
+        updateCanProceed()
+    }
+
+    func openLocalNetworkSettings() {
+        let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_LocalNetwork")!
+        NSWorkspace.shared.open(url)
+    }
+
     func requestPermission() {
         permissionService.requestPermission()
     }
@@ -123,30 +157,22 @@ final class WelcomeViewModel: ObservableObject {
     }
 
     func completeOnboarding() {
-        permissionService.stopPolling()
         preferences.markOnboardingComplete()
         onComplete?()
     }
 
     func startPermissionPolling() {
+        guard !hasPermission else { return }
         permissionService.startPolling()
     }
 
     func stopPermissionPolling() {
-        permissionService.stopPolling()
+        // Intentionally a no-op: the coordinator keeps polling until the
+        // permission is granted (also when the guide is closed early), so the
+        // automatic relaunch still happens if it's granted later.
     }
 
     func restartApp() {
-        // Get the path to the current app
-        let bundlePath = Bundle.main.bundlePath
-
-        // Use a shell script to relaunch after a short delay
-        let task = Process()
-        task.launchPath = "/bin/sh"
-        task.arguments = ["-c", "sleep 0.5; open \"\(bundlePath)\""]
-        task.launch()
-
-        // Terminate the current instance
-        NSApplication.shared.terminate(nil)
+        AppRelauncher.relaunch()
     }
 }
