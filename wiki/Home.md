@@ -1,90 +1,94 @@
-# Deck Developer Wiki
+# Deck Wiki
 
-Welcome to the Deck developer documentation. This wiki contains technical documentation for developers who want to build, modify, or contribute to the project.
+Deck turns an iPhone and Apple Watch into a presentation remote for a Mac. This wiki documents how the three apps work, how to build and release them, and how to fix common problems.
 
-## Quick Links
+![Deck App Store panels](https://raw.githubusercontent.com/douinc/deck/main/marketing/appstore/out/overview.png)
 
-| Section | Description |
-|---------|-------------|
-| [[Getting-Started]] | Set up your development environment |
-| [[Architecture]] | System design and component overview |
-| [[Building]] | Build commands and distribution |
-| [[API-Reference]] | Code structure and key classes |
-| [[Contributing]] | How to contribute |
-| [[Troubleshooting]] | Common issues and solutions |
+## Quick links
 
-## Project Overview
+| Page | What it covers |
+|------|----------------|
+| [[User-Guide]] | Every control on iPhone, Apple Watch and Mac |
+| [[Troubleshooting]] | Connection, slide control, watch, subscription and build problems |
+| [[Getting-Started]] | Set up a development environment |
+| [[Architecture]] | How the apps find each other and what travels between them |
+| [[API-Reference]] | Wire protocol, key classes, stored settings, identifiers |
+| [[Building]] | Build commands, releases, Homebrew cask, marketing assets |
+| [[Contributing]] | Workflow and code style |
+| [[Feature-Ideas]] | What has shipped and what could come next |
 
-Deck is a presentation remote system consisting of three apps:
+## The three apps
 
-- Deck (iOS v2.0.0) — Remote control app for iPhone
-- Deck (macOS v2.0.0) — Menu bar app that receives commands
-- DeckWatch (watchOS v2.0.0) — Apple Watch companion for wrist-based control
+| App | Platform | Version | Role |
+|-----|----------|---------|------|
+| Deck | iOS 18+ | 2.0.0 | The remote: slide control, pointer, timer |
+| DeckWatch | watchOS 10+ | 2.0.0 | Wrist control, relayed through the iPhone |
+| Deck | macOS 14+ | 2.0.0 | Menu bar receiver that presses keys and moves the cursor |
 
 ```mermaid
-%%{init: {'theme': 'dark'}}%%
 graph LR
-    subgraph Watch
-        W[DeckWatch]
-    end
-    subgraph iPhone
-        A[Deck]
-    end
-    subgraph Mac
-        B[Deck]
-    end
-    subgraph Presentation
-        C[Keynote / PowerPoint / Slides]
-    end
-
-    W -->|WatchConnectivity| A
-    A -->|MultipeerConnectivity| B
-    B -->|CGEvent Keystrokes| C
-
-    classDef default fill:#1a1a2e,stroke:#00ff41,color:#00ff41
+    W[Apple Watch<br/>DeckWatch] -->|WatchConnectivity| P[iPhone<br/>Deck]
+    P -->|MultipeerConnectivity| M[Mac<br/>Deck menu bar app]
+    M -->|CGEvent keys, cursor, clicks| S[Keynote / PowerPoint /<br/>Google Slides / Figma]
 ```
 
-## Tech Stack
+## What is in 2.0
+
+- **Thumb-arc remote.** Controls sit on arcs around the thumb of the holding hand, for the left or right hand.
+- **Pointer.** Hold a button and aim the iPhone to move the Mac's cursor; tap to click. Spotlight can dim the Mac's screen around the cursor.
+- **Arrangeable buttons.** Touch and hold, then drag any control to a new spot.
+- **Timer arc.** Slide along the arc to set a limit; the bar drains as the talk counts down.
+- **Guided setup.** Onboarding on iPhone, a setup guide on Mac, first-run tips on Apple Watch, and automatic detection of a denied Local Network permission.
+
+## Tech stack
 
 | Component | Technology |
 |-----------|------------|
 | Language | Swift 5.9 |
-| UI Framework | SwiftUI |
-| Networking | MultipeerConnectivity, WatchConnectivity |
-| Build System | XcodeGen + xcodebuild |
-| macOS Target | 14.0+ (Sonoma) |
-| iOS Target | 18.0+ |
-| watchOS Target | 10.0+ |
+| UI | SwiftUI |
+| iPhone ↔ Mac | MultipeerConnectivity |
+| Watch ↔ iPhone | WatchConnectivity |
+| Mac input | Core Graphics `CGEvent` |
+| Motion | CoreMotion (iPhone pointer, watch wrist flick) |
+| Purchases | StoreKit 2 |
+| Lock Screen timer | ActivityKit + WidgetKit |
+| Build | XcodeGen + xcodebuild, driven by `just` |
 
-## Repository Structure
+## Repository structure
 
 ```
 deck/
-├── project.yml          # XcodeGen configuration
-├── justfile             # Build automation
-├── Shared/              # Shared code between apps
-│   └── RemoteCommand.swift
 ├── MacApp/              # macOS menu bar app
-├── iPhoneApp/           # iOS remote control app
-├── WatchApp/            # watchOS companion app
-├── wiki/                # GitHub Wiki source
-├── public/              # Logos and screenshots
-├── build/               # Build artifacts
-└── .github/             # GitHub Actions workflows
+├── iPhoneApp/           # iOS remote
+├── WatchApp/            # watchOS companion
+├── LiveActivityWidget/  # Lock Screen and Dynamic Island timer
+├── Shared/              # RemoteCommand, PointerMessage, LocalNetworkPermission
+├── wiki/                # Source of this wiki
+├── index.html           # Landing page (deck.dou.so)
+├── support/             # Support page (deck.dou.so/support)
+├── marketing/appstore/  # App Store panels and their renderer
+├── video/               # The 30-second film
+├── public/              # Logos, web captures, README images
+├── project.yml          # XcodeGen configuration
+└── justfile             # Build and release commands
 ```
 
 ## Distribution
 
-| App | Distribution | Link |
-|-----|--------------|------|
-| Deck | GitHub Releases (DMG) | [Releases](https://github.com/douinc/deck/releases) |
-| Deck | Homebrew Cask | `brew tap douinc/tap && brew install --cask deck` |
-| Deck | App Store | [App Store](https://apps.apple.com/us/app/deck/id6758130180) |
-| DeckWatch | Bundled with iOS app | Installs automatically via Watch app |
+| App | Channel | Link |
+|-----|---------|------|
+| Deck for iPhone and Apple Watch | App Store | [apps.apple.com](https://apps.apple.com/us/app/deck/id6758130180) |
+| Deck for Mac | Homebrew cask | `brew tap douinc/tap && brew install --cask deck` |
+| Deck for Mac | Signed and notarized DMG | [GitHub Releases](https://github.com/douinc/deck/releases/latest) |
 
-## License
+The iPhone app has a 7-day free trial, then costs $19.99 a year. The Mac app is free.
 
-MIT License — see [LICENSE](https://github.com/douinc/deck/blob/main/LICENSE)
+## Links
+
+- Website: [deck.dou.so](https://deck.dou.so)
+- Support: [deck.dou.so/support](https://deck.dou.so/support)
+- Film: [youtu.be/bQY4ZfCDE-s](https://youtu.be/bQY4ZfCDE-s)
+- License: [MIT](https://github.com/douinc/deck/blob/main/LICENSE)
 
 ---
 
