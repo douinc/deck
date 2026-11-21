@@ -1,8 +1,8 @@
 # Contributing
 
-Thank you for your interest in contributing to Deck!
+Thanks for your interest in Deck.
 
-## Getting Started
+## Getting started
 
 1. Fork the repository
 2. Clone your fork:
@@ -10,11 +10,11 @@ Thank you for your interest in contributing to Deck!
    git clone https://github.com/YOUR_USERNAME/deck.git
    cd deck
    ```
-3. Set up the development environment (see [[Getting-Started]])
+3. Set up the development environment: [[Getting-Started]]
 
-## Development Workflow
+## Workflow
 
-### Create a Branch
+### Create a branch
 
 ```bash
 git checkout -b feature/your-feature-name
@@ -22,132 +22,118 @@ git checkout -b feature/your-feature-name
 git checkout -b fix/bug-description
 ```
 
-### Make Changes
+### Make changes
 
 1. Edit Swift source files directly
-2. If changing build settings, edit `project.yml`
-3. After editing `project.yml`, run `xcodegen generate`
-4. **Never edit `Deck.xcodeproj` directly** — it's generated
+2. For build settings, targets or Info.plist keys, edit `project.yml`
+3. After editing `project.yml`, run `just generate`
+4. Never edit `Deck.xcodeproj`; it is generated and git-ignored
 
-### Test Your Changes
+### Test your changes
+
+There is no automated test suite yet, so test by hand on real devices where it matters.
 
 ```bash
-# Build both apps
 just build-mac
 just build-sim
-
-# Run and test manually
 just run-mac
 ```
 
-### Commit Guidelines
+| If you changed | Check |
+|----------------|-------|
+| Connection code | First-run discovery, reconnect after the Mac sleeps, reconnect after backgrounding the iPhone, Disconnect |
+| The remote layout | Both holding hands, a small and a large iPhone, Arrange Buttons, a saved custom layout |
+| The timer | A limit and no limit, each color threshold, overtime, the Live Activity |
+| The pointer | Hold, tap to click, Spotlight on two displays, letting go mid-move |
+| The wire protocol | An old Mac build with a new iPhone build, and the reverse |
+| The Mac app | A fresh Accessibility grant (automatic relaunch), Pause and Resume, the setup guide |
+| The watch app | Double Tap and Wrist Flick modes, the Crown, the connect guide |
 
-Use conventional commit messages:
+The simulator launch arguments in [[Getting-Started]] make layout work much faster.
+
+### Commit messages
+
+Use conventional commit prefixes:
 
 ```
-feat: add timer vibration pattern options
-fix: resolve connection timeout on iOS 18
+feat: add pointer speed setting
+fix: reconnect after the Mac wakes from sleep
 docs: update architecture diagram
-refactor: extract connection logic to protocol
+refactor: extract arc geometry into ArcLayout
 ```
 
-Prefixes:
-- `feat:` — New feature
-- `fix:` — Bug fix
-- `docs:` — Documentation
-- `refactor:` — Code refactoring
-- `test:` — Tests
-- `chore:` — Maintenance
+| Prefix | For |
+|--------|-----|
+| `feat:` | New feature |
+| `fix:` | Bug fix |
+| `docs:` | Documentation |
+| `refactor:` | Restructuring without behavior change |
+| `test:` | Tests |
+| `build:` | Build system and release tooling |
+| `chore:` | Maintenance |
 
-### Submit a Pull Request
+### Open a pull request
 
-1. Push your branch:
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-2. Open a PR on GitHub
-3. Fill out the PR template
-4. Wait for review
+1. Push your branch
+2. Open a pull request against `main`
+3. Describe what changed and how you tested it
+4. Wait for review. Pull requests are also reviewed automatically by the Claude Code review workflow.
 
-## Code Style
+## Code style
 
-### Swift Style
+### Swift
 
-- Use SwiftUI and modern Swift concurrency (`async`/`await`)
-- Prefer `@MainActor` for UI-related classes
-- Use `@Published` for observable state
+- SwiftUI for all UI
+- `ObservableObject` with `@Published` for long-lived managers; `@Observable` is used for `SubscriptionManager`
+- Delegate callbacks from MultipeerConnectivity and WatchConnectivity arrive off the main thread; hop to the main queue before touching published state
 - Follow Apple's [Swift API Design Guidelines](https://swift.org/documentation/api-design-guidelines/)
+- Comment the reason, not the mechanics. The connection managers are a good model: each workaround says which failure it prevents.
 
-### Naming Conventions
+### User-facing text
 
-| Type | Convention | Example |
-|------|------------|---------|
-| Classes | PascalCase | `ConnectionManager` |
-| Protocols | PascalCase | `CommandSender` |
-| Functions | camelCase | `sendCommand()` |
-| Variables | camelCase | `isConnected` |
-| Constants | camelCase | `serviceType` |
+Deck's setup screens are written for people who have never used a remote app. Keep that voice:
 
-### File Organization
+- Plain words: "Allow Deck to change slides", not "Grant Accessibility permission"
+- One clear next action per screen
+- Say where to look: "the Deck icon at the top-right of your Mac's screen"
+- Technical details go in diagnostics, not in the main flow
+
+### File organization
 
 ```swift
 // MARK: - Properties
 // MARK: - Initialization
 // MARK: - Public Methods
 // MARK: - Private Methods
-// MARK: - Protocol Conformance
 ```
 
-## Project Structure Guidelines
+## Where code goes
 
-### Adding New Features
+| Code | Directory |
+|------|-----------|
+| Shared by more than one app | `Shared/` |
+| Mac only | `MacApp/` (`Services/`, `ViewModels/`, `Views/`) |
+| iPhone only | `iPhoneApp/` |
+| Watch only | `WatchApp/` |
+| Lock Screen and Dynamic Island | `LiveActivityWidget/` |
 
-1. **Shared code** → `Shared/`
-2. **Mac-only code** → `MacApp/`
-3. **iOS-only code** → `iPhoneApp/`
+A file in `Shared/` compiles into the Mac, iPhone and watch targets. Guard anything unavailable on watchOS, as `RemoteCommand.swift` does for MultipeerConnectivity.
 
-### Modifying Build Configuration
+## Design consistency
 
-Edit `project.yml`, not Xcode project settings:
+The remote's arc geometry and timer colors are repeated in the landing page (`index.html`) and the App Store panels (`marketing/appstore/`). If you change `ArcLayout` or `TimerTint`, update those too. See [[Building]] for how the marketing assets are rendered.
 
-```yaml
-targets:
-  DeckMac:
-    settings:
-      base:
-        YOUR_SETTING: value
-```
+## Documentation
 
-Then regenerate:
-```bash
-xcodegen generate
-```
+- This wiki's source is `wiki/` in the repository. Edit it there; it syncs to GitHub on merge.
+- Update the wiki, the README and the support page (`support/index.html`) when behavior that users see changes.
+- Use `[[Page-Name]]` for links between wiki pages and Mermaid for diagrams.
 
-## Areas for Contribution
+## Ideas and issues
 
-### Good First Issues
-
-- Documentation improvements
-- UI polish and animations
-- Accessibility improvements
-- Localization
-
-### Feature Ideas
-
-- Additional key mappings (custom keys)
-- Slide counter display
-- Multiple Mac connections
-- Widget for quick launch
-
-### Known Issues
-
-Check [GitHub Issues](https://github.com/douinc/deck/issues) for open bugs.
-
-## Questions?
-
-- Open a [Discussion](https://github.com/douinc/deck/discussions)
-- File an [Issue](https://github.com/douinc/deck/issues)
+- [[Feature-Ideas]] lists what could come next
+- [GitHub Issues](https://github.com/douinc/deck/issues) lists open bugs
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the MIT License.
+By contributing, you agree that your contributions are licensed under the MIT License.

@@ -1,137 +1,184 @@
 # Troubleshooting
 
-Common issues and their solutions.
+Problems and fixes, for people using Deck first and for developers after. The short version for users is on the [support page](https://deck.dou.so/support).
 
-## Connection Issues
+## Connection
 
-### Mac not appearing on iPhone
+### The iPhone can't find the Mac
 
-**Symptoms**: iPhone doesn't see the Mac in the device list
+The Mac advertises as soon as Deck launches, whether or not Accessibility is allowed or the setup guide is finished. The iPhone restarts its search every time it returns to the foreground and every 12 seconds while no Mac is visible. After about 10 seconds with nothing found it shows a checklist.
 
-The Mac advertises as soon as Deck launches, whether or not Accessibility
-is granted or onboarding is finished. Accessibility only controls whether
-received commands turn into keystrokes. The iPhone restarts discovery when it
-returns to the foreground, and every ~12s while no Mac is visible. After ~10s
-with nothing found, it expands its setup steps automatically.
+Work through these in order:
 
-**Solutions**:
+1. **Deck is open on the Mac.** Look for the Deck icon in the menu bar and click it. It should say "Waiting for your iPhone…". If it says "Deck is paused", choose **Resume Deck**.
+2. **Local Network on the iPhone.** Settings → Deck → Local Network must be on. When it is off, the app shows "Deck can't look for your Mac" with an **Open Settings** button.
+3. **Local Network on the Mac (macOS 15 or later).** System Settings → Privacy & Security → Local Network → turn on Deck. When it is off, the Mac's menu shows "Your iPhone can't find this Mac" with a Fix item.
+4. **Same network.** Both devices must be on the same Wi‑Fi. Hotel, school, office and guest networks often isolate devices from each other. Turn on Personal Hotspot on the iPhone and join it from the Mac.
+5. **VPN off.** A VPN on either device can hide them from each other.
+6. **Firewall.** If the macOS firewall is set to block all incoming connections, allow Deck or turn that option off.
+7. **Restart both apps.** On the Mac: Deck icon → Quit Deck, then open it again.
 
-1. **Mac app running**: Click the Deck menu bar icon. It should say "Waiting for iPhone to connect...". If it says "Stopped", choose **Start Listening**.
-2. **Local Network permission (iPhone)**: Settings → Deck → Local Network must be on. The iPhone app shows an orange "Local Network access is off" card when it detects a denial.
-3. **Local Network permission (Mac, macOS 15+)**: System Settings → Privacy & Security → Local Network → enable Deck. The menu bar shows "⚠️ Allow Local Network Access…" when it detects a denial.
-4. **Same Network**: Ensure both devices are on the same WiFi network (or the Mac is on the iPhone's hotspot). Guest/public networks with client isolation block Bonjour.
-5. **Disable VPN**: VPNs can hide the local network from discovery
-6. **Restart Apps**: Quit and relaunch both apps
-7. **Check Firewall**: Disable macOS firewall temporarily to test
-8. **Bonjour Services**: Verify Info.plist has correct Bonjour entries:
-   ```xml
-   <key>NSBonjourServices</key>
-   <array>
-       <string>_clickerremote._tcp</string>
-       <string>_clickerremote._udp</string>
-   </array>
-   ```
+### "Couldn't connect" after tapping the Mac
 
-### Connection Drops Frequently
+The Mac was found but did not answer the invitation within 15 seconds.
 
-**Solutions**:
+1. Look at the Mac. If it is asking to let Deck find devices on your network, click **Allow**.
+2. On the Mac: System Settings → Privacy & Security → Local Network → turn on Deck.
+3. Quit and reopen Deck on the Mac, then tap **Try Again** on the iPhone.
 
-1. **Disable VPN**: VPNs can interfere with local network discovery
-2. **Check WiFi**: Ensure stable WiFi connection on both devices
-3. **Bluetooth**: Try connecting via Bluetooth instead (move devices closer)
+### The connection drops
 
-## Keystroke Issues
+Deck notices a dead link within about 15 seconds and reconnects to the same Mac on its own, backing off from 1 to 8 seconds between attempts.
 
-### Keystrokes Not Working
+- **The Mac went to sleep.** Deck restarts its advertiser on wake; the iPhone reconnects when it sees the Mac again.
+- **The iPhone was locked or Deck left the foreground.** iOS suspends the app and the session ends. Open Deck again. The screen stays awake by itself while the remote is showing.
+- **Weak or crowded Wi‑Fi.** Use the iPhone's Personal Hotspot.
+- **VPN.** Turn it off on both devices.
 
-**Symptoms**: Connected successfully but slides don't change
+### Sending diagnostics
 
-**Solutions**:
+On the iPhone: **Help → Connection Diagnostics** shows session state and a log, with a button to copy it. On the Mac: Settings → **Show Debug Menu**, then Deck icon → Debug → **Copy Debug Info**. Include both when you [contact support](mailto:team@dou.so).
 
-1. **Grant Accessibility Permission**:
-   - Go to System Settings → Privacy & Security → Accessibility
-   - Find and enable Deck
-   - **Restart the app**: Click the menu bar icon → Debug → Restart App
-   - If already enabled, toggle off and on, then restart
+## Slide control
 
-2. **Check Frontmost App**: Ensure your presentation app (Keynote, PowerPoint) is in focus
+### Connected, but slides don't change
 
-3. **Test with TextEdit**: Open TextEdit and try — you should see left/right arrow behavior
+1. **Accessibility.** Click the Deck icon in the Mac menu bar. If it says "Deck can't change slides yet", click **Fix: Allow Deck in System Settings…** and turn on Deck under Privacy & Security → Accessibility. Deck relaunches itself when the switch goes on.
+2. **Already on but still not working?** Turn the switch off and on again, or remove Deck from the Accessibility list with the minus button and add it back. Then quit and reopen Deck.
+3. **Bring the slideshow to the front.** Deck sends keys to the frontmost app. Click the slideshow once.
+4. **Check the menu.** With the iPhone connected, the Mac's menu shows "Last: Next slide ▶" when a command arrives. If that line updates and the slides don't move, the problem is Accessibility or focus. If it doesn't update, the problem is the connection.
 
-### Wrong Key Actions
+### Next does nothing in one particular app
 
-**Symptoms**: Slides skip or behave unexpectedly
+Deck sends the right arrow key for Next and the left arrow key for Previous. If the app advances on click instead, turn on **Next Button Left-Clicks** in the iPhone's settings and leave the Mac's cursor over the slides.
 
-**Solutions**:
+### Slides advance twice
 
-- Different presentation apps may use different keys
-- Deck sends Right/Left arrow keys
-- Most apps: Right = Next, Left = Previous
-- Some apps may be configured differently
+Something else is also sending input: a second remote, a hardware clicker, or a watch gesture firing along with a tap. On the watch, turn on **Gesture Lock** in Wrist Flick mode or switch to Double Tap mode.
 
-## Build Issues
+## Pointer
+
+### The cursor doesn't move
+
+- The pointer needs the same Accessibility permission as slide control. See above.
+- The pointer needs Deck 2.0 or later on the Mac. An older Mac app ignores pointer messages while slides still work. Update with `brew upgrade --cask deck` or download the latest DMG.
+- Hold the button. A press shorter than about a fifth of a second is a click, not a move.
+
+### The cursor moves too fast or too slow
+
+Change **Pointer Speed** in the iPhone's settings.
+
+### The Mac's screen stays dimmed
+
+Spotlight lifts when you release the pointer button, and by itself about 2 seconds after the Mac stops hearing from the iPhone. If it remains, quit and reopen Deck on the Mac.
+
+### No dimming when I hold the pointer
+
+Turn on **Spotlight** in the iPhone's settings under Pointer. It is off by default.
+
+## Timer
+
+### I can't change the time limit
+
+The timer arc is locked while the timer runs. Pause it, then slide along the arc, or pick a preset under Duration in Settings.
+
+### I can't rearrange the buttons
+
+Arranging is also locked while the timer runs. Pause the timer, then touch and hold any button except the pointer.
+
+### No buzzes
+
+Check **Haptic Alerts** in Settings and use **Test Haptic**. Buzzes only fire while the timer is running.
+
+### The timer isn't on the Lock Screen
+
+Live Activities must be allowed: Settings → Deck → Live Activities. The activity starts when the iPhone connects to a Mac and ends when it disconnects.
+
+## Apple Watch
+
+### The watch shows "Connect your iPhone first" or "Disconnected"
+
+The watch reaches the Mac through the iPhone.
+
+1. Open Deck on the iPhone and connect to the Mac.
+2. Keep Deck in the foreground on the iPhone.
+3. Return to the watch. The controls appear by themselves.
+
+### The watch says Connected, but slides don't change
+
+- The iPhone was locked or Deck was sent to the background. Open Deck on the iPhone again.
+- The watch retries a command up to 3 times over 1.5 seconds. Wait a moment and try again.
+
+### Double tap does nothing
+
+- Double tap needs Apple Watch Series 9 or later, or Ultra 2, running watchOS 11 or later.
+- The display must be awake. Double tap does not work with your wrist down.
+- In Wrist Flick mode, double tap turns flick detection on and off instead of changing slides.
+- Check that Double Tap is turned on in the watch's Settings → Gestures.
+
+### Wrist flick only goes forward
+
+**No Going Back** is on. Turn it off in the watch app's settings. While it is on, the Previous button is dimmed too.
+
+### Wrist flick goes the wrong way
+
+Toggle **Invert Gestures**. The footer under the switch shows the current mapping.
+
+### Wrist flicks do nothing
+
+Flick detection must be on: the hand icon between the two buttons is yellow when it is. Tap it, or turn on **Auto-toggle with Wrist**. With **Gesture Lock** on, flicks are ignored for 3 seconds after each one.
+
+### The Crown goes the wrong way
+
+Toggle **Invert Crown** in the watch app's settings.
+
+### The watch timer won't reset
+
+Press and hold the time. A tap only starts or pauses it.
+
+## Subscription
+
+### The paywall appears right away
+
+The 7-day trial starts the first time Deck opens on a device and is stored in the Keychain, so deleting and reinstalling does not restart it.
+
+### I subscribed but still see the paywall
+
+Tap **Restore Purchases** on the paywall and check that the iPhone is signed in to the Apple Account that bought the subscription.
+
+### Cancel or manage
+
+iPhone Settings → your name → Subscriptions → Deck.
+
+## Mac app
+
+### Update
+
+`brew upgrade --cask deck`, or download the latest DMG. The menu shows "Update Available" when a newer release exists.
+
+### Homebrew says the tap is untrusted
+
+Run `brew trust douinc/tap` once, then install again. If you used the old tap, run `brew untap douinc/deck` and `brew tap douinc/tap`.
+
+### Uninstall
+
+Quit Deck, then `brew uninstall --cask deck` or drag Deck from Applications to the Trash. Remove Deck from System Settings → Privacy & Security → Accessibility.
+
+---
+
+## Development
 
 ### "Signing requires development team"
 
-**Solution**:
+Replace `HD35YQ72U4` with your Team ID in `project.yml`, then run `just generate`.
 
-1. Open `project.yml`
-2. Find `DEVELOPMENT_TEAM: HD35YQ72U4`
-3. Replace with your Team ID
-4. Run `xcodegen generate`
-
-Find your Team ID:
 ```bash
 security find-identity -v -p codesigning
 ```
 
-### Notarization Fails
+### Apps build but can't discover each other
 
-**Check the log**:
-```bash
-just notary-log
-# Then view specific submission:
-xcrun notarytool log <submission-id> --keychain-profile notarytool-profile
-```
-
-**Common Causes**:
-
-| Error | Fix |
-|-------|-----|
-| Wrong certificate | Use "Developer ID Application", not "Apple Distribution" |
-| Missing timestamp | Ensure `--timestamp` flag in signing |
-| Debug entitlement | Build Release config, not Debug |
-
-**Verify Settings in project.yml**:
-```yaml
-configs:
-  Release:
-    CODE_SIGN_STYLE: Manual
-    CODE_SIGN_IDENTITY: "Developer ID Application"
-    CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
-    OTHER_CODE_SIGN_FLAGS: "--timestamp"
-```
-
-### "Unable to find destination"
-
-**Solution**: Specify OS version explicitly:
-
-```bash
-xcodebuild -scheme DeckiOS \
-  -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.2' \
-  build
-```
-
-List available destinations:
-```bash
-xcodebuild -scheme DeckiOS -showdestinations
-```
-
-### MultipeerConnectivity Not Working
-
-**Symptoms**: Apps build but can't discover each other
-
-**Solution**: Verify `project.yml` has network permissions in `info.properties`:
+Info.plist keys must be in `info.properties` in `project.yml`, not only in the plist files, because XcodeGen rewrites them:
 
 ```yaml
 info:
@@ -142,130 +189,66 @@ info:
     NSLocalNetworkUsageDescription: "..."
 ```
 
-Keys must be in `info.properties`, not just the source Info.plist files.
-
-## Apple Watch Issues
-
-### Watch Not Connecting
-
-**Symptoms**: Watch app shows "Disconnected", commands don't work
-
-**Solutions**:
-
-1. **iPhone app must be running**: The Watch connects through the iPhone, not directly to the Mac
-2. **Check iPhone connection**: The iPhone must be connected to the Mac first
-3. **Relaunch Watch app**: Force-quit and reopen on the Watch
-4. **Check WCSession**: Ensure the Watch is paired and the Watch app is installed
-
-### Watch Commands Not Reaching Mac
-
-**Symptoms**: Watch shows "Connected" but slides don't change
-
-**Solutions**:
-
-1. **iPhone screen locked**: The iPhone disables auto-lock while connected, but if you manually lock it, the MultipeerConnectivity session drops. Unlock the iPhone to restore the connection
-2. **iPhone app in background**: Bring the Deck app to the foreground on the iPhone
-3. **Retry mechanism**: The Watch retries commands up to 3 times — wait a moment and try again
-
-### Watch Timer Reset Not Working
-
-**Solution**: Long press (not tap) the timer display. You should feel a strong haptic pulse confirming the reset.
-
-### Wrist Flick Only Goes Forward / Previous Not Working
-
-**Check "No Going Back" setting**: Open Watch Settings → ensure "No Going Back" is toggled off. When enabled, backward flick gestures are intentionally ignored and the previous-slide button is dimmed.
-
-### Wrist Flick Triggers Wrong Direction
-
-**Check "Invert Gestures" setting**: Open Watch Settings → toggle "Invert Gestures" to swap the forward/backward flick mapping. The footer text shows the current mapping (Clockwise → Next or Counterclockwise → Next).
-
----
-
-## SwiftUI Issues
-
-### Section Syntax Error
-
-**Wrong**:
-```swift
-Section("Header") {
-    // content
-} footer: {
-    Text("Footer")
-}
-```
-
-**Correct**:
-```swift
-Section {
-    // content
-} header: {
-    Text("Header")
-} footer: {
-    Text("Footer")
-}
-```
-
-## Subscription Issues
-
-### Trial Not Starting
-
-**Symptoms**: App immediately shows paywall
-
-**Solutions**:
-
-1. Delete app and reinstall (trial is Keychain-stored)
-2. Check device date is correct
-3. Reset Keychain entry (development only):
-   ```swift
-   // Delete: com.dou.deck.trial.start from Keychain
-   ```
-
-### Purchases Not Restoring
-
-**Solutions**:
-
-1. Tap "Restore Purchases" in paywall
-2. Ensure signed in with correct Apple ID
-3. Check App Store Connect for transaction status
-
-## Debugging Commands
-
-### Check Built Info.plist
+Check what was built:
 
 ```bash
 find ~/Library/Developer/Xcode/DerivedData/Deck-*/Build/Products \
   -name "Info.plist" -exec plutil -p {} \;
 ```
 
-### List Schemes
+### Accessibility stops working after every rebuild
+
+macOS ties the permission to the code signature. Remove Deck from the Accessibility list and add the newly built app, or reset it:
 
 ```bash
-xcodebuild -project Deck.xcodeproj -list
+tccutil reset Accessibility com.dou.clicker-mac
 ```
 
-### List Connected Devices
+### "Unable to find destination"
 
 ```bash
-xcrun devicectl list devices
-```
-
-### List Simulators
-
-```bash
+xcodebuild -scheme DeckiOS -showdestinations
 xcrun simctl list devices available
 ```
 
-### Check Code Signature
+The justfile targets `iPhone 16, OS=18.2`. Change the destination if that simulator is not installed.
+
+### Version numbers reset
+
+`just generate` rewrites the Info.plist files from `project.yml`. Set versions there.
+
+### Resetting the trial
+
+The trial start date is a generic-password Keychain item with the account `com.dou.clicker-ios.trialStartDate`. Deleting the app does not remove it. On a simulator, erase the device:
 
 ```bash
-codesign -dv --verbose=4 /path/to/app
+xcrun simctl erase "iPhone 16"
 ```
 
-## Still Stuck?
+`just screenshot` builds with `SCREENSHOT_MODE`, which skips the trial entirely.
 
-- Search [GitHub Issues](https://github.com/douinc/deck/issues)
-- Open a new issue with:
-  - macOS/iOS version
-  - Xcode version
-  - Steps to reproduce
-  - Error messages or logs
+### Notarization fails
+
+```bash
+just notary-log
+xcrun notarytool log <submission-id> --keychain-profile notarytool-profile
+```
+
+| Error | Fix |
+|-------|-----|
+| Wrong certificate | Use "Developer ID Application", not "Apple Distribution" |
+| Missing timestamp | Keep `OTHER_CODE_SIGN_FLAGS: "--timestamp"` |
+| Debug entitlement | Build Release, with `CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO` |
+
+### Useful commands
+
+```bash
+xcodebuild -project Deck.xcodeproj -list      # Schemes
+xcrun devicectl list devices                  # Connected devices
+codesign -dv --verbose=4 /path/to/Deck.app    # Signature details
+```
+
+## Still stuck?
+
+- Email [team@dou.so](mailto:team@dou.so)
+- Search or open a [GitHub issue](https://github.com/douinc/deck/issues) with your macOS, iOS and Deck versions, what you did, and the diagnostics from both apps

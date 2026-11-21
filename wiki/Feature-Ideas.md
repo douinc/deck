@@ -1,164 +1,193 @@
 # Feature Ideas
 
-A brainstorm of potential new features for the Deck presentation remote system. Ideas are organized by category with rough complexity estimates.
+What has shipped from this list, and what could come next. Ideas carry a rough complexity estimate.
 
 > **Legend**: 🟢 Low complexity · 🟡 Medium complexity · 🔴 High complexity
 
 ---
 
+## Shipped
+
+| Idea | Shipped as |
+|------|------------|
+| Laser Pointer Mode | The pointer: hold a button and aim the iPhone to move the Mac's cursor, tap to click. Spotlight dims the Mac's screen around the cursor. |
+| Customizable Button Layout | Arrange Buttons: touch and hold, then drag any control. Layouts mirror with the holding hand. |
+| Left-handed layout | Holding Hand setting |
+| Click to advance | Next Button Left-Clicks setting |
+| Live Activities | Timer on the Lock Screen and in the Dynamic Island |
+| Digital Crown Control | One Crown detent per slide, with Invert Crown |
+| Forward-Only Flick Mode | "No Going Back" in Wrist Flick mode |
+| QR Code Pairing (partly) | The Mac setup guide shows a QR code for the App Store. It does not pair devices. |
+| VoiceOver labels | Every remote control has an accessibility label; the pointer has a hint |
+
+---
+
 ## Navigation & Slide Control
 
+### Start, End and Black Screen buttons 🟢
+The Mac already understands `start` (Return), `end` (Escape) and `black` (B). The remote has no buttons for them. Add them as optional controls that can be dragged onto the arcs.
+
 ### Custom Key Mappings 🟡
-Let users configure which keystrokes are sent for each command on a per-app basis. Keynote, PowerPoint, and Google Slides all use different shortcuts (e.g., PowerPoint uses `N`/`P` for next/previous while Keynote uses arrow keys). The Mac app could detect the frontmost app and switch mappings automatically, or let users define custom profiles.
+Let users choose which keystrokes each command sends, per app. The Mac app could detect the frontmost app and switch mappings automatically, or let users define profiles.
 
 ### Slide Counter 🟡
-The Mac app sends the current slide number back to the iPhone and Watch. This requires the Mac to read slide position from the presentation app (likely via Accessibility API or AppleScript). Displays as a simple "Slide 12 / 34" indicator on the remote.
+The Mac sends the current slide number back to the iPhone and Watch. Requires reading slide position from the presentation app through the Accessibility API or AppleScript. Shows as "Slide 12 / 34".
 
 ### Slide Bookmarks / Jump-to-Slide 🟡
-Bookmark key slides (e.g., "Q&A", "Demo", "Backup slides") and jump directly to them from iPhone. Could work by sending a rapid sequence of keystrokes or by integrating with AppleScript to set the slide index directly.
+Bookmark key slides ("Q&A", "Demo", "Backup") and jump to them from the iPhone, by a keystroke sequence or by setting the slide index through AppleScript.
 
 ### Auto-Advance Mode 🟢
-Timer-based automatic slide progression with configurable per-slide intervals. Useful for lightning talks, Pecha Kucha (20 slides x 20 seconds), or kiosk displays. Haptic countdown before each advance.
+Timer-based slide progression with a configurable interval. Useful for lightning talks, Pecha Kucha (20 slides × 20 seconds) or kiosk displays. Haptic countdown before each advance.
 
-### Laser Pointer Mode 🔴
-Use the iPhone's gyroscope and accelerometer to move a virtual cursor overlay on the Mac screen. The iPhone tracks device orientation relative to a calibration point and sends continuous position updates. Mac renders a colored dot overlay on top of all windows.
+### Pointer Extras 🟡
+Build on the pointer: a drawn laser dot instead of the system cursor, a choice of spotlight size and dim level, drag and scroll gestures, and a recenter gesture.
 
 ---
 
 ## Timer & Pacing
 
+### Longer Limits 🟢
+The timer arc tops out at 30 minutes. Add a longer scale, or a second turn of the arc, for lectures and workshops.
+
 ### Per-Slide Timing 🟡
-Track how long you spend on each slide during a presentation. After the session, view a breakdown showing time per slide. Helps identify slides where you tend to linger or rush.
+Track how long each slide stays up. After the session, show a breakdown to reveal where you linger or rush.
 
 ### Rehearsal Mode 🟡
-Set target durations for each slide or section. During rehearsal, the timer shows a progress bar for the current slide's budget. Haptic and visual alerts when you're over time, with a running deficit/surplus indicator.
+Set target durations per slide or section. During rehearsal, show the current slide's budget with a running deficit or surplus.
 
 ### Pace Coach 🟡
-Gentle haptic nudges if you're spending too long on one slide relative to your overall time budget. Configurable sensitivity — from subtle reminders to urgent buzzes. Works on both iPhone and Watch.
+Haptic nudges when you spend too long on one slide relative to the overall budget, on iPhone and Watch.
 
 ### Stage Display Mode 🟢
-Large, high-contrast timer optimized for visibility from across the stage. iPhone in landscape orientation with massive countdown digits, elapsed time, and color-coded status (green → yellow → red as time runs out). Useful when you place your phone on the podium.
+A large, high-contrast landscape timer for a phone resting on the podium.
+
+### Shared Watch Timer 🟡
+The watch timer is separate from the iPhone's. Sync them so the watch shows the same countdown, limit and colors.
 
 ---
 
 ## Connectivity & Multi-Device
 
 ### Multi-Mac Support 🔴
-Connect to and control multiple Macs simultaneously. Use case: a presenter with a main projector and a confidence monitor on separate machines, or a classroom with multiple screens. The iPhone shows a list of connected Macs and can send commands to all or individually.
+Control more than one Mac at once, for a main projector and a confidence monitor on separate machines.
 
 ### Multi-Presenter Mode 🟡
-Allow multiple iPhones to connect to the same Mac. Useful for co-presentations where different speakers control slides from their own device. Optional: a "presenter token" that designates who has active control, passed between speakers with a tap.
+Several iPhones on one Mac, with a "presenter token" passed between speakers.
 
 ### Connection Quality Indicator 🟢
-Show signal strength or round-trip latency on the iPhone and Watch. A simple colored dot (green/yellow/red) based on ping response time. Helps presenters know if they're walking too far from the Mac.
+A colored dot on iPhone and Watch based on keepalive round-trip time, so presenters know when they have walked too far from the Mac.
 
-### QR Code Pairing 🟡
-The Mac app displays a QR code containing its peer ID or a pairing token. Scan it with the iPhone camera to instantly connect instead of browsing/waiting for discovery. Faster and more reliable in venues with many devices on the network.
+### Tap-to-Pair 🟡
+A QR code or NFC tag from the Mac that connects a specific iPhone directly, skipping the device list. Faster in venues with many Macs running Deck.
 
 ### Direct Bluetooth HID Mode 🔴
-iPhone acts as a Bluetooth keyboard directly, sending keystrokes without needing the Mac app installed at all. Useful for presenting on someone else's computer or a conference-provided machine. Uses CoreBluetooth HID profile.
+The iPhone acts as a Bluetooth keyboard, with no Mac app. Useful on someone else's computer.
+
+### Windows and Linux Receivers 🔴
+A receiver for non-Mac computers. MultipeerConnectivity is Apple-only, so this needs a second transport.
 
 ---
 
 ## Apple Ecosystem Integration
 
-### Live Activities 🟡
-Show the current slide number, elapsed time, and timer status on the iPhone Lock Screen and Dynamic Island while presenting. Lets you glance at progress without unlocking or opening the app. Updates in real-time using ActivityKit push updates.
-
 ### Home Screen Widgets 🟡
-Glanceable widgets for iPhone and Watch:
-- **iPhone**: Quick-connect widget showing connection status with tap-to-connect, or a timer widget.
-- **Watch**: Complication showing connection status or current slide number on the watch face.
+A quick-connect or timer widget on iPhone, and a complication on the watch face showing connection status.
 
 ### Siri & Shortcuts Integration 🟡
-"Hey Siri, next slide" — voice control for hands-free operation. Also expose actions to the Shortcuts app so users can build automations: trigger a Shortcut when the presentation starts, send a notification when time is up, or log presentation data to a spreadsheet.
+"Next slide" by voice, plus Shortcuts actions for automations when a presentation starts or time runs out.
 
 ### SharePlay Support 🔴
-Remote participants on a FaceTime call can see real-time slide position synced through SharePlay. The presenter's iPhone broadcasts slide changes, and remote viewers' devices stay in sync. Could pair with screen sharing for a complete remote presentation experience.
+Remote participants on a FaceTime call see slide position in sync.
 
 ### Handoff 🟡
-Start controlling the presentation from iPhone, raise your wrist, and seamlessly continue on Watch — or vice versa. Uses NSUserActivity to transfer the active session context between devices. Timer state and connection persist across the handoff.
+Start on iPhone, continue on Watch, with timer state carried across.
 
 ### Focus Mode Integration 🟢
-Automatically enable a "Presenting" Focus filter when connected to a Mac. Silences notifications, hides sensitive content, and optionally sets a custom Lock Screen. Deactivates when the presentation session ends.
+Turn on a "Presenting" Focus filter when connected to a Mac.
+
+### iPad Support 🟡
+The iPhone app is iPhone-only and portrait-only. An iPad layout could add room for notes.
 
 ---
 
 ## Presenter Experience
 
 ### Presenter Notes Display 🔴
-The Mac reads presenter notes from the current slide (via AppleScript for Keynote/PowerPoint or Accessibility API) and sends them back to the iPhone. The remote shows scrollable notes below the control buttons. Requires per-app integration but transforms the iPhone into a full confidence monitor.
-
-### Audience Q&A 🔴
-Generate a QR code linking to a simple web page (could be a local web server on the Mac or a cloud service) where audience members submit questions. Questions stream to the iPhone in real-time, and the presenter can mark them as answered or star them for later.
+The Mac reads the current slide's notes (AppleScript for Keynote and PowerPoint) and sends them to the iPhone.
 
 ### Slide Preview Thumbnails 🔴
-See the current and next slide as small thumbnail images on the iPhone. Requires the Mac to capture or extract slide images and stream them over MultipeerConnectivity. Bandwidth-intensive but transformative for the presenting experience.
+Current and next slide as thumbnails on the iPhone, streamed from the Mac.
+
+### Audience Q&A 🔴
+A QR code linking to a page where the audience submits questions, streamed to the iPhone.
 
 ### Custom Screen Messages 🟡
-Beyond just black screen, support white screen and custom overlay messages ("Back in 5 minutes", "Questions?", "Thank you!"). Configurable preset messages that the Mac renders as a full-screen overlay. Triggered from the iPhone with a quick-action menu.
+White screen and overlay messages ("Back in 5 minutes", "Questions?") rendered by the Mac. The Spotlight overlay already shows how to draw above a full-screen slideshow.
 
 ---
 
 ## Analytics & History
 
 ### Presentation Analytics 🟡
-Post-presentation summary showing: total duration, number of slides advanced, average time per slide, a timeline chart of slide changes, and pacing analysis. Stored locally on iPhone with option to export.
+A post-talk summary: duration, slides advanced, time per slide, pacing. Stored on the iPhone only.
 
 ### Session History 🟢
-Log past presentations with date, duration, slide count, and which Mac was used. Browse history in a list view. Useful for tracking speaking engagements or rehearsal progress over time.
+A log of past talks with date, duration and Mac name.
 
 ### Export Timer Data 🟢
-Share presentation timing data as CSV, JSON, or to Apple Health (as a "mindfulness" session with duration). Integration with Shortcuts for automatic logging to spreadsheets or note-taking apps.
+Share timing data as CSV or JSON, or through Shortcuts.
 
 ---
 
 ## Accessibility & Customization
 
-### VoiceOver Optimization 🟢
-Audit and enhance all controls with meaningful accessibility labels, hints, and traits. Ensure the full presentation flow works with VoiceOver enabled — critical for visually impaired presenters.
+### VoiceOver Audit 🟢
+Labels exist. Audit the full flow with VoiceOver on, including arranging buttons and setting the time limit on the arc, which are gesture-only today.
 
-### Customizable Button Layout 🟡
-Let users rearrange, resize, or hide buttons on the iPhone remote. Some presenters only need next/previous; others want all controls visible. Support for custom button pages or a minimal mode.
+### Resize and Hide Buttons 🟡
+Arrange Buttons moves controls. Add resizing, hiding ones you never use, and saved layouts per talk.
 
 ### Theming Options 🟢
-Allow light mode for bright environments or custom accent colors beyond the current dark-only design. Per-user preference with quick toggle. Keep dark mode as default since it's optimized for stage visibility.
+Light mode for bright rooms, or custom accent colors. Dark stays the default for stage visibility.
 
 ### Configurable Haptic Patterns 🟡
-Let users create custom vibration patterns for different events: slide advance, timer milestones, connection lost. Different intensity levels and rhythms to convey information without looking at the screen.
+Custom patterns and intensities for interval, halfway, time's up and overtime.
+
+### Localization 🟡
+The apps are English-only. Start with the setup and troubleshooting text, where clarity matters most.
 
 ---
 
 ## Watch-Specific
 
 ### Watch Face Complication 🟡
-Show connection status, current slide number, or elapsed time directly on the watch face. Supports multiple complication families (circular, rectangular, inline). Tap to launch the app.
+Connection status or elapsed time on the watch face. Tap to launch.
 
 ### Smart Stack Widget 🟢
-A widget in the watchOS Smart Stack showing timer and connection status at a glance. Automatically surfaces when a presentation is detected (using relevance scoring).
+Timer and connection status in the Smart Stack.
 
-### Digital Crown Control 🟡
-Use the Digital Crown rotation to scroll through slides — rotate forward for next, backward for previous. Provides a tactile, precise alternative to wrist gestures or button taps. Configurable sensitivity and detent mapping.
+### Configurable Double Tap 🟢
+Let users choose what double tap does: next slide, previous slide, or start and stop the timer.
 
-### ~~Forward-Only Flick Mode~~ ✅ Implemented
-~~Disable backward flick gestures so only forward flicks are recognized, reducing accidental triggers during presentations.~~ Shipped as the "No Going Back" toggle in Watch flick mode settings.
-
-### Expanded Double-Tap Gestures 🟢
-Build on the existing watchOS 11 `handGestureShortcut` support. Map double-tap to configurable actions: next slide, previous slide, or start/stop timer. Let users choose what double-tap does in settings.
+### Flick Sensitivity 🟢
+The flick threshold is fixed at 3.0 rad/s. Offer a sensitivity setting.
 
 ---
 
 ## Infrastructure & Developer Experience
 
 ### End-to-End Encryption 🟡
-Encrypt command traffic between devices using a shared key established during pairing. Currently MultipeerConnectivity uses optional encryption — upgrade to required with a custom key exchange for sensitive corporate presentations.
-
-### Plugin / Extension System 🔴
-Allow third-party developers to create plugins that add new commands, integrations, or UI panels. For example, a plugin that integrates with OBS for streaming, or one that controls Zoom's screen share. Uses a defined command protocol and Swift Package plugins.
+Sessions use optional MultipeerConnectivity encryption because required encryption proved less reliable on real networks. Add pairing with a shared key for corporate settings.
 
 ### Automated UI Testing 🟡
-XCUITest suites for all three apps covering the core flows: onboarding, connection, slide control, timer, and settings. Run in CI on simulators to catch regressions.
+XCUITest suites for onboarding, connection, slide control, timer and settings, run in CI on simulators. There are no automated tests today.
+
+### In-App Mac Updates 🟡
+The Mac app only links to the release page. Adopt Sparkle or a similar updater.
+
+### Plugin / Extension System 🔴
+Third-party commands and integrations, such as OBS or Zoom control.
 
 ---
 
-*Have an idea? Open an issue or submit a PR!*
+*Have an idea? [Open an issue](https://github.com/douinc/deck/issues) or submit a pull request.*
