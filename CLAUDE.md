@@ -29,7 +29,7 @@ deck/
 ├── WatchApp/            # Apple Watch companion app
 ├── Shared/              # Shared code (RemoteCommand.swift)
 ├── wiki/                # GitHub wiki documentation
-├── public/              # Logos and screenshots
+├── public/              # Logos, web captures and README images
 ├── build/               # Build artifacts
 ├── .github/             # GitHub Actions workflows
 ├── project.yml          # XcodeGen project configuration
